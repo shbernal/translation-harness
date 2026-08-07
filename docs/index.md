@@ -5,14 +5,14 @@ change, before you change it.
 
 | Page | Owns |
 |---|---|
-| `architecture.md` | The layers and the rule that binds them, the run loop, resume and quota semantics |
-| `providers.md` | Subprocess invocation, model profiles, timeouts, process trees, what a row costs |
-| `contract.md` | The response schema, prompt assembly, the prompt hash, guardrails |
-| `store.md` | The `TranslationStore` interface, its obligations, and implementing one |
+| [architecture.md](architecture.md) | The layers and the rule that binds them, the run loop's shape, the store seam and its six contract terms, schema versions, known limitations |
+| [providers.md](providers.md) | Subprocess invocation, the Windows paths, timeouts and the output cap, what a row costs, the measured context trims, adding a provider |
+| [contract.md](contract.md) | The response schema, prompt assembly, the two hashes, the per-row extras and salt hooks |
+| [guardrails.md](guardrails.md) | The hard and soft split, the length-ratio defaults and their real scope, writing a validator |
+| [pipeline.md](pipeline.md) | Resume, claiming, concurrency, the three stop reasons, quota, events, evidence |
 
-None of these pages exist yet. The library's own code is still being moved in,
-and a page written before the code it describes is a page that documents an
-intention. They land with the surface they describe.
+Human usage lives in [`../README.md`](../README.md); the session-start briefing
+for agents is [`../AGENTS.md`](../AGENTS.md).
 
 ## What belongs here, and what does not
 

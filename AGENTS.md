@@ -21,9 +21,14 @@ Node >= 24, non-negotiable: the shipped store uses the built-in `node:sqlite`.
 ESM only. Package manager is pnpm, pinned via `packageManager`.
 
 ```powershell
-pnpm check      # typecheck + lint + test (the done gate)
-pnpm build      # emit dist/ (.js + .d.ts)
+pnpm check                      # typecheck + lint + test (the done gate)
+pnpm build                      # emit dist/ (.js + .d.ts)
+node examples/minimal/run.ts    # the whole loop, offline, in about a second
 ```
+
+Run the example when you have changed anything on the path from a job to a
+committed row. It exercises more of the library end to end than any single test
+and it costs nothing.
 
 The source tree runs directly under Node's type stripping, which is why
 `erasableSyntaxOnly` is on and why relative imports keep their `.ts` extension.
@@ -56,6 +61,11 @@ else is in `docs/`.
   A `console.log` or a `process.on('SIGINT')` in `src/` is a defect.
 - **Each row settles in its own store transaction.** Preserve that isolation or
   resume, quota-pause and worker-pool semantics all break.
+- **Nothing may be awaited between a successful `tryClaim` and the two lines
+  that record the row locally.** A row claimed in the registry but missing from
+  the run's own list is never released, sits in `running`, and is invisible to
+  every selection filter. There is a comment at the call site saying so, because
+  those two lines look exactly like something worth tidying.
 
 ## Where the documentation is
 
@@ -64,11 +74,12 @@ Read the page that owns the subject *before* changing the code, not after.
 | About to touch | Read |
 |---|---|
 | `src/provider/**`, or anything about what a row costs | [docs/providers.md](docs/providers.md) |
-| `src/contract/**`, `src/job.ts` | [docs/contract.md](docs/contract.md) |
-| `src/store/**`, or implementing a store | [docs/store.md](docs/store.md) |
-| `src/pipeline/**`, resume or quota semantics | [docs/architecture.md](docs/architecture.md) |
+| `src/contract/prompt.ts`, `src/contract/schema.ts`, `src/job.ts` | [docs/contract.md](docs/contract.md) |
+| `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
+| `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |
+| `src/store/**`, or implementing a store | [docs/architecture.md](docs/architecture.md) |
 | The layer boundaries, or adding a directory under `src/` | [docs/architecture.md](docs/architecture.md) |
-| `test/fixtures/`, or guardrail thresholds | [test/fixtures/README.md](test/fixtures/README.md) |
+| `test/fixtures/`, or contributing one | [test/fixtures/README.md](test/fixtures/README.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 [docs/index.md](docs/index.md) is the map, and it also states what belongs in
 `docs/` and what belongs in a commit message.
