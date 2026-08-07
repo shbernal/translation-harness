@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+
+    // `allowImportingTsExtensions` is a typecheck-only affordance and is refused
+    // once emit is on. `rewriteRelativeImportExtensions` is its emitting
+    // counterpart: `.ts` specifiers stay in the source, so the tree keeps running
+    // directly under Node's type stripping, and the emitted JS says `.js`.
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src"]
+}

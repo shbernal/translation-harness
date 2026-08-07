@@ -1,0 +1,17 @@
+# Normalize all text files to LF in the repo and on checkout.
+# `eol=lf` overrides a machine's core.autocrlf=true (the Git-for-Windows
+# default), which otherwise re-CRLFs files and breaks `biome check`.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.xlsx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.sqlite binary
+*.sqlite3 binary

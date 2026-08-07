@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    # Both platforms, not one. The Windows process-control paths (the
+    # `%COMSPEC% /d /c <name>.cmd` launcher shim and the `taskkill /T /F` tree
+    # kill) are among the parts of this library most worth publishing and the
+    # parts a Linux-only matrix would exercise least. The unit tests inject the
+    # platform rather than reading `process.platform`, so both branches are
+    # covered everywhere, but only a real Windows runner proves the spawn
+    # actually works there.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out translation-harness
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install and check
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm check
+
+      - name: Build
+        run: pnpm build

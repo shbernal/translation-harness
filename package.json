@@ -1,0 +1,56 @@
+{
+  "name": "translation-harness",
+  "version": "0.0.0",
+  "description": "Drive non-interactive coding-agent CLIs as resumable, guardrailed translation workers over a structured corpus.",
+  "keywords": [
+    "translation",
+    "localization",
+    "agent",
+    "codex",
+    "claude",
+    "batch",
+    "resumable",
+    "subprocess",
+    "llm"
+  ],
+  "author": "shbernal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shbernal/translation-harness"
+  },
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=11"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./providers": {
+      "types": "./dist/provider/index.d.ts",
+      "import": "./dist/provider/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "node --eval \"import('node:fs').then(fs => fs.rmSync('dist', { recursive: true, force: true }))\"",
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "prepare": "pnpm run build",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome check src test scripts examples && pnpm run lint:text",
+    "lint:text": "node scripts/check-no-emdash.ts",
+    "lint:fix": "biome check --write src test scripts examples",
+    "format": "biome format --write src test scripts examples",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2"
+  }
+}
