@@ -45,6 +45,25 @@ shell and `apply_patch` tool definitions at 540. Shipping tool schemas and then
 asking the model in the prompt not to use tools is the same mistake the Claude
 side was separately measured making at 19k tokens a row.
 
+### `cwd` has to be a directory Codex trusts
+
+The other thing the working directory decides. Codex refuses to run outside a
+directory it trusts - in practice a git repository - and this package does not
+pass `--skip-git-repo-check`. A `cwd` it does not trust fails **every row** of a
+pass, on row one, like this:
+
+```
+TransientFailure: exit_code
+Not inside a trusted directory and --skip-git-repo-check was not specified.
+```
+
+Point `cwd` at your project root. That is what it is for, it is almost always a
+repository, and the trim above is what stops the project root's own agent
+instructions riding along. A scratch directory is the case that surprises
+people, and it is captured verbatim in
+`test/fixtures/recorded/codex-untrusted-cwd` so the failure has a name here
+rather than only on somebody's terminal.
+
 ### Why they are `-c key=false` and never `--disable`
 
 `--disable` rejects a flag name the running build does not know and exits 1, so

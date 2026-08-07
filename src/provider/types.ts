@@ -25,6 +25,14 @@ export interface ProviderOptions {
    * `project_doc_max_bytes=0` heads the trim list in `codex.ts`, and the two
    * facts are only useful next to each other.
    *
+   * **Codex additionally requires a directory it trusts** - in practice, a git
+   * repository. This package does not pass `--skip-git-repo-check`, so a `cwd`
+   * Codex does not trust fails every row of a pass with
+   * `TransientFailure('exit_code', 'Not inside a trusted directory ...')`. Point
+   * this at your project root, not at a scratch directory. The failure is
+   * captured verbatim in `test/fixtures/recorded/codex-untrusted-cwd`, because
+   * it is the kind of thing that is obvious once and baffling on row one.
+   *
    * Where attempt logs are recorded, and relative to what, is the store's
    * business, not this option's.
    */

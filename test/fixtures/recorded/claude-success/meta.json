@@ -1,0 +1,9 @@
+{
+  "label": "claude-success",
+  "provider": "claude",
+  "model": "claude-sonnet-5",
+  "captured": "2026-08-07",
+  "payload": "the 'pod' row of test/fixtures/corpus/kubernetes-glossary (CC BY 4.0)",
+  "outcome": "success",
+  "exitCode": 0
+}

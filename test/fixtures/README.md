@@ -49,6 +49,38 @@ where a row is a paragraph, one where a row is a button.
 
 Neither project endorses this one.
 
+## Recorded provider output
+
+`recorded/<provider>-<case>/` holds real `codex` and `claude` output, captured
+once and committed, so the invokers can be tested against bytes a model
+actually produced rather than bytes we imagined it would. Each case carries the
+prompt that was sent, the `stdout` and `stderr` that came back, the response
+file where there was one, and a `meta.json` naming the provider, the model and
+the outcome.
+
+`test/provider-recorded.test.ts` replays them through a fake CLI on `PATH` and
+runs the **real** invoker against the result. No model is called.
+
+| Case | What only a real capture shows |
+|---|---|
+| `codex-success` | the answer arriving as a file while `stdout` carries something else entirely, and the human banner on `stderr` |
+| `codex-untrusted-cwd` | the exact wording of a refusal, and that it classifies as `exit_code` rather than `quota` |
+| `claude-success` | an envelope whose `modelUsage` map holds a *second* model (Claude Code bills its own internal call), which the exact-model check has to look past |
+| `claude-fenced` | a real model wrapping its JSON in a ` ```json ` fence with a sentence on either side, which is the whole reason `extractJsonObject` exists |
+
+**The payload is always fixture material**, never anything private: every case
+sent one row of the Kubernetes glossary above, and `meta.json` says so.
+
+**Everything was scrubbed before it was committed** - local paths, the home
+directory, the user and host names, and session UUIDs, including the one Codex
+prints as plain text in its banner where a JSON-shaped scrubber would have
+missed it. `provider-recorded.test.ts` re-checks the committed bytes for paths,
+UUIDs, keys, tokens and addresses on every run, because the scrubbing itself is
+not repeatable and this is the one directory nobody re-reads.
+
+Adding a case means capturing it, scrubbing it, and reading every byte of it
+yourself. If you cannot say what a line in it is, it does not go in.
+
 ## Shape
 
 ```text

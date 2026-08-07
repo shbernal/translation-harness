@@ -1,0 +1,10 @@
+{
+  "label": "codex-untrusted-cwd",
+  "provider": "codex",
+  "model": "gpt-5.6-sol",
+  "captured": "2026-08-07",
+  "payload": "the 'pod' row of test/fixtures/corpus/kubernetes-glossary (CC BY 4.0)",
+  "outcome": "TransientFailure: exit_code",
+  "exitCode": 1,
+  "note": "Codex refuses to run outside a directory it trusts. The library does not pass --skip-git-repo-check, so ProviderOptions.cwd must be a trusted directory - in the intended use it is the consumer project root, which is one."
+}

@@ -1,0 +1,13 @@
+You are translating entries from the Kubernetes documentation glossary.
+Keep product names and API object names in English.
+
+Translate from English into French. Translate these fields:
+- title: Term
+- shortDescription: Short description
+
+Reply with EXACTLY ONE JSON object matching the output schema and nothing else:
+no prose, no explanation, no markdown code fences. Preserve the identifier exactly.
+When a field's source value is null, its translation MUST be null.
+
+SOURCE ROW JSON:
+{"identifier":"pod","fields":{"title":"Pod","shortDescription":"A Pod represents a set of running containers in your cluster."}}
