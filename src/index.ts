@@ -80,10 +80,12 @@ export {
 export {
   applySchema,
   PRECOMPUTED_MODEL_LABEL,
+  parseFields,
   SCHEMA_VERSION,
   type SqliteStore,
   type SqliteStoreOptions,
   sqliteStore,
+  tx,
   utcnow,
 } from './store/sqlite.ts';
 export type {

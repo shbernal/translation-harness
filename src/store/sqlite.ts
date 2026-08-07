@@ -46,7 +46,16 @@ export function utcnow(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
-function parseFields(json: string | null): Fields {
+/**
+ * Read a `*_json` column back into fields.
+ *
+ * Exported because a host running its own tables on this store's connection
+ * (which is what `SqliteStore.db` is for) has to read the same columns the
+ * registry writes, and reimplementing "empty means no fields" in each of them
+ * is how two halves of one database start disagreeing about what a null column
+ * means.
+ */
+export function parseFields(json: string | null): Fields {
   if (!json) return {};
   return JSON.parse(json) as Fields;
 }
@@ -147,8 +156,15 @@ function openDatabase(path: string): DatabaseSync {
   );
 }
 
-/** Run `fn` inside a single transaction, committing on success. */
-function tx<T>(db: DatabaseSync, fn: () => T): T {
+/**
+ * Run `fn` inside a single transaction, committing on success.
+ *
+ * Exported for the same reason as `parseFields`: a host with its own tables on
+ * this connection needs the transactions around them to nest the same way the
+ * registry's do. Rolling your own `BEGIN`/`COMMIT` beside these is how a failed
+ * write in one half leaves the other half committed.
+ */
+export function tx<T>(db: DatabaseSync, fn: () => T): T {
   db.exec('BEGIN');
   try {
     const result = fn();

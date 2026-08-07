@@ -160,6 +160,18 @@ type only and never on `TranslationStore`, so a host can run its own DDL on the
 same connection and keep its tables in the same transactional world. The
 interface has to stay implementable by something with no such handle to give.
 
+Two helpers come with it, `tx(db, fn)` and `parseFields(json)`, and they are
+exported for a specific reason rather than for completeness: a host that has
+been handed the connection will otherwise reimplement both beside ours, and then
+the two halves of one database can disagree about what a transaction covers and
+about what a null `*_json` column means. If you are running your own tables
+here, use these.
+
+Your own tables mean your own row types. The registry's `Item` is deliberately
+camelCase with `source` already parsed; if you query `items` yourself, declare
+the column shape you are selecting locally rather than expecting the library to
+publish its DDL as a type.
+
 The consequence reaches consumers: `applySchema` names `node:sqlite` types in
 the published declarations, so **Node 24 typings are needed to compile against
 this package**, not merely to run it.
