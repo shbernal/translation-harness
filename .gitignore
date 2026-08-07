@@ -4,3 +4,8 @@ dist/
 *.sqlite
 *.sqlite3
 .DS_Store
+
+# Recorded provider output is committed material, not a stray log. `*.log`
+# above swept it out silently and the suite still passed, because the files
+# were on disk locally - a fresh clone is where that would have surfaced.
+!test/fixtures/recorded/**/*.log
