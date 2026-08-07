@@ -1,0 +1,12 @@
+DOMAIN GUIDANCE
+
+Translate from English into French. Translate these fields:
+- name: Name
+- description: Description
+
+Reply with EXACTLY ONE JSON object matching the output schema and nothing else:
+no prose, no explanation, no markdown code fences. Preserve the identifier exactly.
+When a field's source value is null, its translation MUST be null.
+
+SOURCE ROW JSON:
+{"identifier":"AC-1","fields":{"name":"Access Control Policy","description":"The organization develops [Assignment: organization-defined] procedures."}}
