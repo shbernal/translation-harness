@@ -1,6 +1,6 @@
 {
   "name": "translation-harness",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Drive non-interactive coding-agent CLIs as resumable, guardrailed translation workers over a structured corpus.",
   "keywords": [
     "translation",
@@ -25,7 +25,7 @@
     "node": ">=24",
     "pnpm": ">=11"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "docs", "README.md", "CHANGELOG.md", "LICENSE"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

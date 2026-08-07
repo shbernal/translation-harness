@@ -102,6 +102,26 @@ argue that nothing interleaves, because `node:sqlite` is synchronous and the
 runtime single-threaded. That argument is void here, and what replaces it is
 contract term 2 below.
 
+## What the library refuses to know
+
+Two omissions look like oversights and are both deliberate, so they are written
+down here rather than rediscovered as bugs.
+
+**`TranslationJob.sourceLang` is a free `string`, not a union.** The project
+this was extracted from closes it to `'English' | 'German'`, and is right to: it
+has language-specific tables - term folding, determiner handling,
+orthotypography - and a typo there silently selects the wrong one. The library
+has no such tables, so it has nothing to be wrong about, and closing the union
+here would only stop somebody translating a language nobody thought to add. If
+*you* have those tables, close it in your own code. Do not close it here.
+
+**`SourceRecord` says nothing about where a row came from.** No workbook path,
+no sheet name, no column index. That single assumption is what made the engine
+unpublishable in the first place: an engine that reads column D of a spreadsheet
+is a spreadsheet tool. The host reads its own rows and hands them over, and the
+one thing the library asks is that `rowNumber` is stable across re-reads,
+because it is the primary key everything else hangs off.
+
 ## The store seam
 
 `TranslationStore` is an interface with exactly one shipped implementation,

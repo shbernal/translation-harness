@@ -134,11 +134,19 @@ stored as `review_required` with the reasons attached, so it is usable and
 flagged rather than thrown away or waved through.
 
 The generic length-ratio bounds ship as **0.45 to 2.25**, and you should know
-exactly what that number is: it was calibrated on **one language pair over one
-corpus of long-form technical prose**. Any other pair, and any other shape of
-text, is simply unmeasured. A corpus of short interface strings will trip the
-lower bound on nearly every row, because three characters is a large ratio when
-the string is six long. Override it per job:
+exactly what that number is. It was *chosen* on one language pair over one
+corpus of long-form technical prose, and it has since been *measured* against
+committed, human-translated fixtures: 40 ordered pairs across English, French,
+Spanish, Italian and German, in two registers. Between 0% and 5.6% of rows per
+pair are sent to review, and on that material the flagged rows are dominated by
+translations that dropped a section their source had - which is what the check
+is for. `test/calibration.test.ts` is the measurement, and it fails when a pair
+crosses the bound.
+
+**Pairs the fixtures do not contain are unmeasured, not blessed.** Nothing here
+says anything about English into Japanese. And the ratio is over the
+concatenated fields, so a job whose rows are single words can still move a long
+way for a small absolute change. Override it per job:
 
 ```ts
 thresholds: { minLengthRatio: 0.2, maxLengthRatio: 4 }

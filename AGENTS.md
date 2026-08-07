@@ -34,6 +34,16 @@ The source tree runs directly under Node's type stripping, which is why
 `erasableSyntaxOnly` is on and why relative imports keep their `.ts` extension.
 `rewriteRelativeImportExtensions` turns them into `.js` on the way into `dist/`.
 
+Two toolchain facts that look like bugs and are not:
+
+- **The emitted `.d.ts` files still say `.ts` in their relative specifiers.**
+  That is correct - TypeScript resolves them to the adjacent declarations, and
+  a consumer on 5.8 compiles against them cleanly. Do not "fix" it.
+- **TypeScript 7 publishes no compiler JS API**, only `version` and
+  `versionMajorMinor`. Nothing here may plan on `ts.preProcessFile` or
+  `createSourceFile`; `test/layering.test.ts` carries its own import scanner
+  for exactly this reason.
+
 ## Rules that must not be broken
 
 These are the ones an agent can violate in the first five minutes. Everything

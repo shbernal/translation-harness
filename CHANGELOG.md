@@ -2,10 +2,10 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
-## Unreleased
+## 0.1.0
 
-The first release. Nothing is published yet, and the API is not stable until
-`0.1.0` is tagged.
+The first release. `0.x` means the API can still move; anything that changes
+will be listed here with the reason.
 
 ### Added
 
@@ -34,9 +34,16 @@ The first release. Nothing is published yet, and the API is not stable until
 
 - **Node >= 24 is required to run and to compile.** The shipped store uses
   `node:sqlite`, and its types reach the published declarations.
-- The generic length-ratio bounds (0.45 to 2.25) were calibrated on one language
-  pair over one corpus of long-form technical prose. Every other pair is
-  unmeasured. Override `job.thresholds` rather than living with the noise.
+- **The generic length-ratio bounds (0.45 to 2.25) are measured, not guessed.**
+  40 ordered language pairs across English, French, Spanish, Italian and German,
+  in two registers, send between 0% and 5.6% of human-translated rows to review,
+  and in that corpus the flagged rows are dominated by translations that dropped
+  a section their source had. Pairs the fixtures do not contain are unmeasured
+  rather than blessed. See
+  [docs/guardrails.md](docs/guardrails.md#the-length-ratio-and-what-its-default-actually-means).
+- **`ProviderOptions.cwd` must be a directory Codex trusts**, in practice a git
+  repository, because this package does not pass `--skip-git-repo-check`. Point
+  it at your project root. Anything else fails every row of a pass on row one.
 - Rows claimed by a run already recorded `interrupted` still wait out
   `reclaimStale`'s full cutoff. See
   [docs/architecture.md](docs/architecture.md#known-limitation-stale-claims-from-interrupted-runs).
