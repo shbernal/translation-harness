@@ -1,0 +1,150 @@
+{"identifier":"0cc4dbf12d5b7dbc","fields":{"label":" (kürzlich geöffnet)"}}
+{"identifier":"681b75cfa32b7c3f","fields":{"label":"%s kann hier abgelegt werden. %s zum Ablegen, %s zum Abbrechen."}}
+{"identifier":"70b65a073e24219d","fields":{"label":"‚%s‘ ist nicht außerhalb einer Schleife oder einer ‚%s‘-Anweisung gestattet."}}
+{"identifier":"4e7babbb8a3055bf","fields":{"label":"(Wert)"}}
+{"identifier":"f40d45819bc5df6d","fields":{"label":"3D-Texturparameter-Ermittlung."}}
+{"identifier":"cef447bb656b596b","fields":{"label":"Über einzigartigen Namen zugreifen"}}
+{"identifier":"31bcf7f713a777d5","fields":{"label":"Bezier-Track hinzufügen"}}
+{"identifier":"32bd81860ae0affd","fields":{"label":"Metadateneigenschaft für „%s“ hinzufügen"}}
+{"identifier":"ecc322504db0ce31","fields":{"label":"Übersetzung hinzufügen"}}
+{"identifier":"2168839e778ec243","fields":{"label":"Eigenschaft zu Synchronisierer hinzufügen"}}
+{"identifier":"2b488c3920ee725e","fields":{"label":"Alle Tags"}}
+{"identifier":"1c2fc6fcb783ca4e","fields":{"label":"Szene %s wird analysiert"}}
+{"identifier":"2a625ba854b06753","fields":{"label":"Animation Position3D mehrmals verändern"}}
+{"identifier":"202781ecb4d9293c","fields":{"label":"App-Store-Team-ID nicht angegeben."}}
+{"identifier":"431af373f3dec1a5","fields":{"label":"Ressource zuweisen"}}
+{"identifier":"9552b441ea8b17e9","fields":{"label":"CanvasItems automatisch samplen"}}
+{"identifier":"5904f883b4a2cda8","fields":{"label":"Occluder backen"}}
+{"identifier":"4eabf006abfd201f","fields":{"label":"Blende über in nächste Geänderte"}}
+{"identifier":"28b8bcd6eca22079","fields":{"label":"Bounding-Box"}}
+{"identifier":"3bb479dcf1b0c881","fields":{"label":"CRC-Fehler beim Lesen der Datei aus dem ZIP-Archiv."}}
+{"identifier":"ab5c4b5197b3a4a5","fields":{"label":"Dateisystemzugriff fehlgeschlagen."}}
+{"identifier":"a1f02eece08adb13","fields":{"label":"Transformation abbrechen"}}
+{"identifier":"c46bedddb2789d95","fields":{"label":"Cursor zum Anfang der Zeile"}}
+{"identifier":"aead798b8f427271","fields":{"label":"Animationsname ändern:"}}
+{"identifier":"cc145cdb639b7a29","fields":{"label":"Installationsverzeichnis ändern"}}
+{"identifier":"fb7f93ccd93f0077","fields":{"label":"Checkbox Element"}}
+{"identifier":"556a8b2b2518b083","fields":{"label":"Löse Vererbung"}}
+{"identifier":"d88eded51ea1232a","fields":{"label":"Clip-Anfang"}}
+{"identifier":"a9829d39fb079df1","fields":{"label":"Farbvorgabe"}}
+{"identifier":"07ae7e5ebc50d218","fields":{"label":"Bedingungsauswertungsfehler."}}
+{"identifier":"e9a641608ca5a8f6","fields":{"label":"Konstanten können nicht verändert werden."}}
+{"identifier":"976de48a4f4fa91f","fields":{"label":"Zu Polygon2D umwandeln"}}
+{"identifier":"3435070505c26481","fields":{"label":"Systeminformationen kopieren"}}
+{"identifier":"4421d93124256c02","fields":{"label":"Anwendung signtool konnte nicht gefunden werden in: „%s“."}}
+{"identifier":"01cd3d731fc815c0","fields":{"label":"Es konnte keine einzelne Kollisions-Shape erstellt werden."}}
+{"identifier":"608cfeafcea0c649","fields":{"label":"Erzeuge Emissionspunkte aus Node"}}
+{"identifier":"a4f74ce5f5283e7a","fields":{"label":"Polygon3D erstellen"}}
+{"identifier":"206da6be482bc74c","fields":{"label":"Shape entlang der lokalen Y-Achse erstellen."}}
+{"identifier":"c6115ecc0739622a","fields":{"label":"Benutzerdefiniert (komma-separiert):"}}
+{"identifier":"83a337df989e2abe","fields":{"label":"Debug-Konsolen-Export"}}
+{"identifier":"74f60155d8db3172","fields":{"label":"Animation löschen"}}
+{"identifier":"9425c014762b1b8c","fields":{"label":"Gruppe \"%s\" und alle ihre Verweise löschen?"}}
+{"identifier":"1f393ee19b6771ed","fields":{"label":"Alle sichtbaren konstanten Elemente abwählen."}}
+{"identifier":"43fad80ff60e9f78","fields":{"label":"Szenen-einzigartigen Namen deaktivieren"}}
+{"identifier":"7d22ec7b6b4ebe1d","fields":{"label":"Teilt 4D-Vektor durch 4D-Vektor."}}
+{"identifier":"4d1f1689ae2e8ae6","fields":{"label":"Daten ziehen und ablegen"}}
+{"identifier":"cda9517bc4cdf17e","fields":{"label":"FEHLER: Ressource konnte nicht geladen werden!"}}
+{"identifier":"727c761bef3c2610","fields":{"label":"Polygon bearbeiten (Punkt entfernen)"}}
+{"identifier":"ef89741147844fd5","fields":{"label":"Editoreinstellungen …"}}
+{"identifier":"da77dc5bc927062a","fields":{"label":"Szenen-einzigartige(n) Namen aktivieren"}}
+{"identifier":"54b847a987dc3794","fields":{"label":"Fehler – Shader konnte nicht im Dateisystem erstellt werden."}}
+{"identifier":"9271bc884d7a9faa","fields":{"label":"Fehler beim Starten des HTTP-Servers: %d."}}
+{"identifier":"9f8425adef357ffc","fields":{"label":"Ausgangs-Port erweitern"}}
+{"identifier":"ad3ed3941c1066da","fields":{"label":"Bezeichner oder ‚[‘ nach Typ erwartet."}}
+{"identifier":"4a50d574196cd1cb","fields":{"label":"Icons exportieren"}}
+{"identifier":"3a2d0d1787aeff74","fields":{"label":"Auszuführender Ausdruck"}}
+{"identifier":"2562923ad36bab18","fields":{"label":"Erzeugen von _CodeSignature-Unterordner fehlgeschlagen."}}
+{"identifier":"3892917e55356cc2","fields":{"label":"Features (%d von %d aktiv)"}}
+{"identifier":"033955d469b620d6","fields":{"label":"Füllen"}}
+{"identifier":"bf0e5179cb962af6","fields":{"label":"Suche Vorheriges"}}
+{"identifier":"990fbe3c496ea615","fields":{"label":"Auf Ursprung zentrieren"}}
+{"identifier":"393c57bd08a3a66e","fields":{"label":"Fragment"}}
+{"identifier":"59b088e4b22b324a","fields":{"label":"Ungefähre Suche"}}
+{"identifier":"326158ae369381dc","fields":{"label":"Erzeugungszeit (s):"}}
+{"identifier":"3c6b16fa0a3ae81a","fields":{"label":"Zum vorigen Lesezeichen springen"}}
+{"identifier":"472b28041874c5d0","fields":{"label":"Rastereinstellungen"}}
+{"identifier":"4450239cfd601d9c","fields":{"label":"Halbpixel-Einrasten"}}
+{"identifier":"584df2670cb1b161","fields":{"label":"Shift beim Klick auf das Schlüssel-Icon gedrückt halten, um diesen Dialog zu überspringen."}}
+{"identifier":"728c1acbd7da1fe2","fields":{"label":"Theme importieren …"}}
+{"identifier":"c2a425056ae454ae","fields":{"label":"Anfangswert für Zähler."}}
+{"identifier":"3a5e81160c7ee50f","fields":{"label":"Android-Buildvorlage installieren …"}}
+{"identifier":"7be0ab0497898b84","fields":{"label":"Ungültige Info.plist, keine bundle-id."}}
+{"identifier":"016f04bcf39a600a","fields":{"label":"Ungültige Dateiversion."}}
+{"identifier":"ad319254c68aadb0","fields":{"label":"Ungültige Produktversion."}}
+{"identifier":"f5a942cc43e616c9","fields":{"label":"Joypad-Bewegung auf der Achse %d (%s) mit dem Wert %.2f"}}
+{"identifier":"97ee1b8dd0d5456b","fields":{"label":"KiB"}}
+{"identifier":"cd434dffc9ad0779","fields":{"label":"Links nach Rechts, Unten nach Oben"}}
+{"identifier":"28e52c22ca44c8ab","fields":{"label":"Lineare Interpolation zwischen zwei Vektoren, verwendet ein Skalar."}}
+{"identifier":"f86826593cf4de20","fields":{"label":"Laden …"}}
+{"identifier":"41511832eead1982","fields":{"label":"Transformation auf Z-Achse begrenzen"}}
+{"identifier":"f34c2871387e7dea","fields":{"label":"Griffe gespiegelt machen (Auto-Tangente)"}}
+{"identifier":"0e52f6b9d02515c5","fields":{"label":"Markdown"}}
+{"identifier":"8af8ebcca498eae6","fields":{"label":"Aufwärts-Achse des Meshs:"}}
+{"identifier":"dea79332147ffe1f","fields":{"label":"Min"}}
+{"identifier":"d2ea1516fbd01374","fields":{"label":"Monitore"}}
+{"identifier":"d6a88b84b74b1ef0","fields":{"label":"Bewegungsmodus"}}
+{"identifier":"0ab72673b0e023af","fields":{"label":"Multipliziert zwei Float-Skalare."}}
+{"identifier":"ece76e2057dd3d85","fields":{"label":"Nächste FPS: %d"}}
+{"identifier":"fce5b5ca0d6dfde5","fields":{"label":"Neuer Layout-Name"}}
+{"identifier":"418a43b730b6f75a","fields":{"label":"Keine Schriftgrößen gefunden."}}
+{"identifier":"6130a35928c4d0f6","fields":{"label":"Keine Quelle für Oberfläche angegeben."}}
+{"identifier":"0c116906863f6ac9","fields":{"label":"Normalen werden für Lightmap-Entpacken benötigt."}}
+{"identifier":"5548b6ac1b014025","fields":{"label":"Verdeckungsebene %d"}}
+{"identifier":"3883a4f48ffcc021","fields":{"label":"Editor öffnen"}}
+{"identifier":"5bdb60dbbbe0a759","fields":{"label":"Liste der Unterressourcen öffnen."}}
+{"identifier":"d0db8b5e364b6989","fields":{"label":"Optionen"}}
+{"identifier":"b24963ea2cbc74b9","fields":{"label":"Überschreiben"}}
+{"identifier":"9df531e9e7779ea2","fields":{"label":"Parameter geändert: %s"}}
+{"identifier":"27226e681fe58b3a","fields":{"label":"Eingefügte Animation"}}
+{"identifier":"a89383f1a4302676","fields":{"label":"Physisch"}}
+{"identifier":"7b5cb3c7f705671d","fields":{"label":"Normaler Text"}}
+{"identifier":"69fc27b4c35c5de6","fields":{"label":"MultiMesh füllen"}}
+{"identifier":"cac3f1f5feb55016","fields":{"label":"Vorschau Canvas-Skalierung"}}
+{"identifier":"8b890c49e0f2c7e5","fields":{"label":"Projektinstallationspfad:"}}
+{"identifier":"2a44c6aaa424162a","fields":{"label":"Quart"}}
+{"identifier":"06c391682d9307d0","fields":{"label":"Snapshot empfangen (%s/%s MiB)"}}
+{"identifier":"f23d37d53b2ac887","fields":{"label":"Neuladen abgeschlossen."}}
+{"identifier":"7d025e1efc395c84","fields":{"label":"Animationsbibliothek entfernen: %s"}}
+{"identifier":"fd88c422f194403f","fields":{"label":"Remote entfernen"}}
+{"identifier":"4f88396338ad7d79","fields":{"label":"Von Projektliste entfernen"}}
+{"identifier":"dae9d5a3ae80b650","fields":{"label":"Icon-Element umbenennen"}}
+{"identifier":"aade2bf139aec80f","fields":{"label":"Ersetzungsmodus"}}
+{"identifier":"00d360ed321e9f2a","fields":{"label":"Rotation zurücksetzen"}}
+{"identifier":"6b983a81e5e8099e","fields":{"label":"Neustarten"}}
+{"identifier":"3b694fc0747ab317","fields":{"label":"Gradient umkehren"}}
+{"identifier":"37160db14d2bc907","fields":{"label":"Root-Typ:"}}
+{"identifier":"bed10423624c6b73","fields":{"label":"Bestimmte Szene abspielen"}}
+{"identifier":"ded3ef7455b27189","fields":{"label":"Speichern u. Neustarten"}}
+{"identifier":"e3ee181706385555","fields":{"label":"Szene vor dem Abspielen speichern …"}}
+{"identifier":"ea1c510d1ddb7264","fields":{"label":"Durchsuchen"}}
+{"identifier":"505c2f4f216f95d1","fields":{"label":"Nur Skript-Methoden"}}
+{"identifier":"e4bf7699bab0848d","fields":{"label":"Alle Keys auswählen"}}
+{"identifier":"738dc42df407a3ce","fields":{"label":"UI-Szene auswählen:"}}
+{"identifier":"d9da12e167f30b78","fields":{"label":"Ordner zum extrahieren der Materialressourcen auswählen"}}
+{"identifier":"5e5203087a4864a2","fields":{"label":"Sepiafunktion."}}
+{"identifier":"ee1e97c4ad993f7a","fields":{"label":"Rand einstellen"}}
+{"identifier":"b60baf3b70125489","fields":{"label":"Als Hauptszene setzen"}}
+{"identifier":"75c987fb938f1cd3","fields":{"label":"Umschalt+Ziehen: Kontrollpunkte auswählen"}}
+{"identifier":"1eec0b78f3cedb5d","fields":{"label":"Im Dateisystem anzeigen"}}
+{"identifier":"e329d3bde0044f52","fields":{"label":"Datei überspringen (nicht exportieren)"}}
+{"identifier":"fc39e6a6c638cc78","fields":{"label":"Festkörper-Pixel"}}
+{"identifier":"51c5a1c70c08bd89","fields":{"label":"Dreht sich, wenn das Editorfenster neu gezeichnet wird."}}
+{"identifier":"2bdeee5308129ab4","fields":{"label":"Hereinspringen"}}
+{"identifier":"91ea17fae617e4f1","fields":{"label":"Der Unterordner kann nicht ein bereits existierender Ordner sein."}}
+{"identifier":"2e2585cab46e20dc","fields":{"label":"Oberflächenindex"}}
+{"identifier":"296f5f84ef537410","fields":{"label":"Tags werden bei Anzeige automatisch großgeschrieben."}}
+{"identifier":"79a5aca8cb050d1d","fields":{"label":"Der ‚%s‘-Qualifier wird nicht für Matrix-Typen unterstützt."}}
+{"identifier":"b4405a1a297c9d6e","fields":{"label":"Die gewählte Klasse kann nicht instanziiert werden."}}
+{"identifier":"bbc8e75a44654203","fields":{"label":"Diese Klasse ist als experimentell eingetragen."}}
+{"identifier":"3b68f48c1b63d93a","fields":{"label":"Dies ist ein Skript benutzerdefinierten Typs."}}
+{"identifier":"e388c2fad237dca3","fields":{"label":"Audiobus Solo ein-/ausschalten"}}
+{"identifier":"2a80084369362cb9","fields":{"label":"ShaderFile-Dock ein-/ausschalten"}}
+{"identifier":"e3788220de82268b","fields":{"label":"Oben orthogonal"}}
+{"identifier":"4dd2c9e50c77cdcb","fields":{"label":"Übergang von:"}}
+{"identifier":"35921f6f9ab07377","fields":{"label":"UV-Entfalten fehlgeschlagen, könnte das Mesh keine Mannigfaltigkeit sein?"}}
+{"identifier":"27d1a30cf39b6fe8","fields":{"label":"Auswahl entgruppieren"}}
+{"identifier":"ea3550ebdadec15a","fields":{"label":"Diese StyleBox nicht mehr als Hauptstil markieren."}}
+{"identifier":"3526200ba9a0b306","fields":{"label":"Skripte werden hochgeladen …"}}
+{"identifier":"9c18a7aa18789282","fields":{"label":"Wert vom Typ ‚%s‘ kann keine Länge bereitstellen."}}
+{"identifier":"5d55da2f420c9975","fields":{"label":"Größe des Video-RAM: %s MB (%s)"}}

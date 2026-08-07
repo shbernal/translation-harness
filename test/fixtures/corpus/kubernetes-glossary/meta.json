@@ -1,0 +1,32 @@
+{
+  "id": "kubernetes-glossary",
+  "title": "Kubernetes documentation glossary",
+  "upstream": "https://github.com/kubernetes/website",
+  "path": "content/<lang>/docs/reference/glossary/<id>.md",
+  "commit": "30e44e23d4dca48f4ee5f0c74574016f5c4d8130",
+  "retrieved": "2026-08-07",
+  "license": "CC-BY-4.0",
+  "attribution": "The Kubernetes Authors. Kubernetes documentation, licensed under CC BY 4.0. https://github.com/kubernetes/website",
+  "register": "technical reference prose, one definition per term",
+  "alignment": "the upstream file stem, which is the glossary term id, is the identifier",
+  "fields": {
+    "title": "the term as the page names it (often untranslated for proper nouns)",
+    "shortDescription": "the front-matter one-sentence definition",
+    "definition": "the body before <!--more-->",
+    "detail": "the body after <!--more-->, absent on many entries"
+  },
+  "languages": {
+    "en": 79,
+    "fr": 78,
+    "es": 49,
+    "it": 27,
+    "de": 38
+  },
+  "files": {
+    "en.jsonl": "1a4cd8ca1eae53297c315ca663e4d5a736fe20c1c65fd4c6692d757bad974236",
+    "fr.jsonl": "df0cca7e9a5f685327ca183b5b44757de443087cc8be0cb468dbf451abe632db",
+    "es.jsonl": "9b4d3d4f87b3c063fd74fc9575160cb754cf5fab6babcc1357a5ae70b7629e29",
+    "it.jsonl": "d03d61988f0ebe54df110ae7687553fb2c0287daf9b0ad76d170da2c99e7b1ac",
+    "de.jsonl": "6165ab0cc0bfab7fcf50946ad3a1db2b4bade3332c11f6a550bb0c18880f40e8"
+  }
+}

@@ -15,3 +15,7 @@
 *.gz binary
 *.sqlite binary
 *.sqlite3 binary
+
+# Fixtures are third-party bytes and their SHA-256 is recorded beside them.
+# Git must not normalise anything in here, whatever a future fixture contains.
+test/fixtures/** -text

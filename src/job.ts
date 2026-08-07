@@ -54,12 +54,23 @@ export interface GuardrailThresholds {
 /**
  * The shipped defaults, and an honest account of where they come from.
  *
- * These were calibrated on one language pair over one private corpus of
- * long-form technical prose. They are a reasonable starting point for material
- * of that shape and they are wrong for other shapes: a corpus of two-word
- * interface strings will trip the lower bound on almost every row, because a
- * three-character difference is a large ratio when the string is six characters
- * long. Override them per job rather than living with the noise.
+ * They were chosen on one language pair over one private corpus of long-form
+ * technical prose. They have since been **measured** over the committed
+ * fixtures: 40 ordered language pairs drawn from English, French, Spanish,
+ * Italian and German, across two registers (reference prose, and interface
+ * labels of 3 to 60 characters). They send between 0% and 5.6% of
+ * human-translated rows to review, and in the corpus the flagged rows are
+ * dominated by genuine cases - a translation that dropped a section its source
+ * had. `test/calibration.test.ts` is that measurement, and it fails when a
+ * pair crosses the bound.
+ *
+ * Two things that measurement does *not* license. Pairs the fixtures do not
+ * contain are unmeasured rather than blessed; nothing here says anything about
+ * English into Japanese. And the ratio is over the concatenated fields, so a
+ * job whose rows are single words is still a job whose rows can move a long way
+ * in ratio for a small absolute change - the effect is real, it just needs
+ * strings much shorter than an interface has. Override per job if your material
+ * is that shape.
  */
 export const DEFAULT_THRESHOLDS: GuardrailThresholds = {
   minLengthRatio: 0.45,

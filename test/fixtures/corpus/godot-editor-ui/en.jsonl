@@ -1,0 +1,150 @@
+{"identifier":"0cc4dbf12d5b7dbc","fields":{"label":" (recently opened)"}}
+{"identifier":"681b75cfa32b7c3f","fields":{"label":"%s can be dropped here. Use %s to drop, use %s to cancel."}}
+{"identifier":"70b65a073e24219d","fields":{"label":"'%s' is not allowed outside of a loop or '%s' statement."}}
+{"identifier":"4e7babbb8a3055bf","fields":{"label":"(value)"}}
+{"identifier":"f40d45819bc5df6d","fields":{"label":"3D texture parameter lookup."}}
+{"identifier":"cef447bb656b596b","fields":{"label":"Access as Unique Name"}}
+{"identifier":"31bcf7f713a777d5","fields":{"label":"Add Bezier Track"}}
+{"identifier":"32bd81860ae0affd","fields":{"label":"Add Metadata Property for \"%s\""}}
+{"identifier":"ecc322504db0ce31","fields":{"label":"Add Translation"}}
+{"identifier":"2168839e778ec243","fields":{"label":"Add property to synchronizer"}}
+{"identifier":"2b488c3920ee725e","fields":{"label":"All Tags"}}
+{"identifier":"1c2fc6fcb783ca4e","fields":{"label":"Analyzing scene %s"}}
+{"identifier":"2a625ba854b06753","fields":{"label":"Animation Multi Change Position3D"}}
+{"identifier":"202781ecb4d9293c","fields":{"label":"App Store Team ID not specified."}}
+{"identifier":"431af373f3dec1a5","fields":{"label":"Assign Resource"}}
+{"identifier":"9552b441ea8b17e9","fields":{"label":"Auto Resample CanvasItems"}}
+{"identifier":"5904f883b4a2cda8","fields":{"label":"Bake Occluders"}}
+{"identifier":"4eabf006abfd201f","fields":{"label":"Blend Next Changed"}}
+{"identifier":"28b8bcd6eca22079","fields":{"label":"Bounding Box"}}
+{"identifier":"3bb479dcf1b0c881","fields":{"label":"CRC error reading file from ZIP archive."}}
+{"identifier":"ab5c4b5197b3a4a5","fields":{"label":"Can't get filesystem access."}}
+{"identifier":"a1f02eece08adb13","fields":{"label":"Cancel Transformation"}}
+{"identifier":"c46bedddb2789d95","fields":{"label":"Caret Line Start"}}
+{"identifier":"aead798b8f427271","fields":{"label":"Change Animation Name:"}}
+{"identifier":"cc145cdb639b7a29","fields":{"label":"Change Install Folder"}}
+{"identifier":"fb7f93ccd93f0077","fields":{"label":"Check Item"}}
+{"identifier":"556a8b2b2518b083","fields":{"label":"Clear Inheritance"}}
+{"identifier":"d88eded51ea1232a","fields":{"label":"Clip Start"}}
+{"identifier":"a9829d39fb079df1","fields":{"label":"Color Preset"}}
+{"identifier":"07ae7e5ebc50d218","fields":{"label":"Condition evaluation error."}}
+{"identifier":"e9a641608ca5a8f6","fields":{"label":"Constants cannot be modified."}}
+{"identifier":"976de48a4f4fa91f","fields":{"label":"Convert to Polygon2D"}}
+{"identifier":"3435070505c26481","fields":{"label":"Copy System Info"}}
+{"identifier":"4421d93124256c02","fields":{"label":"Could not find signtool executable at \"%s\"."}}
+{"identifier":"01cd3d731fc815c0","fields":{"label":"Couldn't create a single collision shape."}}
+{"identifier":"608cfeafcea0c649","fields":{"label":"Create Emission Points From Node"}}
+{"identifier":"a4f74ce5f5283e7a","fields":{"label":"Create Polygon3D"}}
+{"identifier":"206da6be482bc74c","fields":{"label":"Create the shape along the local Y-Axis."}}
+{"identifier":"c6115ecc0739622a","fields":{"label":"Custom (comma-separated):"}}
+{"identifier":"83a337df989e2abe","fields":{"label":"Debug Console Export"}}
+{"identifier":"74f60155d8db3172","fields":{"label":"Delete Animation"}}
+{"identifier":"9425c014762b1b8c","fields":{"label":"Delete group \"%s\" and all its references?"}}
+{"identifier":"1f393ee19b6771ed","fields":{"label":"Deselect all visible constant items."}}
+{"identifier":"43fad80ff60e9f78","fields":{"label":"Disable Scene Unique Name"}}
+{"identifier":"7d22ec7b6b4ebe1d","fields":{"label":"Divides 4D vector by 4D vector."}}
+{"identifier":"4d1f1689ae2e8ae6","fields":{"label":"Drag-and-drop data"}}
+{"identifier":"cda9517bc4cdf17e","fields":{"label":"ERROR: Couldn't load resource!"}}
+{"identifier":"727c761bef3c2610","fields":{"label":"Edit Polygon (Remove Point)"}}
+{"identifier":"ef89741147844fd5","fields":{"label":"Editor Settings..."}}
+{"identifier":"da77dc5bc927062a","fields":{"label":"Enable Scene Unique Name(s)"}}
+{"identifier":"54b847a987dc3794","fields":{"label":"Error - Could not create shader in filesystem."}}
+{"identifier":"9271bc884d7a9faa","fields":{"label":"Error starting HTTP server: %d."}}
+{"identifier":"9f8425adef357ffc","fields":{"label":"Expand Output Port"}}
+{"identifier":"ad3ed3941c1066da","fields":{"label":"Expected an identifier or '[' after type."}}
+{"identifier":"4a50d574196cd1cb","fields":{"label":"Export Icons"}}
+{"identifier":"3a2d0d1787aeff74","fields":{"label":"Expression to evaluate"}}
+{"identifier":"2562923ad36bab18","fields":{"label":"Failed to create _CodeSignature subfolder."}}
+{"identifier":"3892917e55356cc2","fields":{"label":"Features (%d of %d set)"}}
+{"identifier":"033955d469b620d6","fields":{"label":"Fill"}}
+{"identifier":"bf0e5179cb962af6","fields":{"label":"Find Previous"}}
+{"identifier":"990fbe3c496ea615","fields":{"label":"Focus Origin"}}
+{"identifier":"393c57bd08a3a66e","fields":{"label":"Fragment"}}
+{"identifier":"59b088e4b22b324a","fields":{"label":"Fuzzy Search"}}
+{"identifier":"326158ae369381dc","fields":{"label":"Generation Time (sec):"}}
+{"identifier":"3c6b16fa0a3ae81a","fields":{"label":"Go to Previous Bookmark"}}
+{"identifier":"472b28041874c5d0","fields":{"label":"Grid Settings"}}
+{"identifier":"4450239cfd601d9c","fields":{"label":"Half-Pixel Snap"}}
+{"identifier":"584df2670cb1b161","fields":{"label":"Hold Shift when clicking the key icon to skip this dialog."}}
+{"identifier":"728c1acbd7da1fe2","fields":{"label":"Import Theme..."}}
+{"identifier":"c2a425056ae454ae","fields":{"label":"Initial value for the counter."}}
+{"identifier":"3a5e81160c7ee50f","fields":{"label":"Install Android Build Template..."}}
+{"identifier":"7be0ab0497898b84","fields":{"label":"Invalid Info.plist, no bundle id."}}
+{"identifier":"016f04bcf39a600a","fields":{"label":"Invalid file version."}}
+{"identifier":"ad319254c68aadb0","fields":{"label":"Invalid product version."}}
+{"identifier":"f5a942cc43e616c9","fields":{"label":"Joypad Motion on Axis %d (%s) with Value %.2f"}}
+{"identifier":"97ee1b8dd0d5456b","fields":{"label":"KiB"}}
+{"identifier":"cd434dffc9ad0779","fields":{"label":"Left to Right, Bottom to Top"}}
+{"identifier":"28e52c22ca44c8ab","fields":{"label":"Linear interpolation between two vectors using scalar."}}
+{"identifier":"f86826593cf4de20","fields":{"label":"Load..."}}
+{"identifier":"41511832eead1982","fields":{"label":"Lock Transformation to Z axis"}}
+{"identifier":"f34c2871387e7dea","fields":{"label":"Make Handles Mirrored (Auto Tangent)"}}
+{"identifier":"0e52f6b9d02515c5","fields":{"label":"Markdown"}}
+{"identifier":"8af8ebcca498eae6","fields":{"label":"Mesh Up Axis:"}}
+{"identifier":"dea79332147ffe1f","fields":{"label":"Min"}}
+{"identifier":"d2ea1516fbd01374","fields":{"label":"Monitors"}}
+{"identifier":"d6a88b84b74b1ef0","fields":{"label":"Move Mode"}}
+{"identifier":"0ab72673b0e023af","fields":{"label":"Multiplies two floating-point scalars."}}
+{"identifier":"ece76e2057dd3d85","fields":{"label":"Nearest FPS: %d"}}
+{"identifier":"fce5b5ca0d6dfde5","fields":{"label":"New layout name"}}
+{"identifier":"418a43b730b6f75a","fields":{"label":"No font sizes found."}}
+{"identifier":"6130a35928c4d0f6","fields":{"label":"No surface source specified."}}
+{"identifier":"0c116906863f6ac9","fields":{"label":"Normals are required for lightmap unwrap."}}
+{"identifier":"5548b6ac1b014025","fields":{"label":"Occlusion Layer %d"}}
+{"identifier":"3883a4f48ffcc021","fields":{"label":"Open Editor"}}
+{"identifier":"5bdb60dbbbe0a759","fields":{"label":"Open a list of sub-resources."}}
+{"identifier":"d0db8b5e364b6989","fields":{"label":"Options"}}
+{"identifier":"b24963ea2cbc74b9","fields":{"label":"Overwrite"}}
+{"identifier":"9df531e9e7779ea2","fields":{"label":"Parameter Changed: %s"}}
+{"identifier":"27226e681fe58b3a","fields":{"label":"Pasted Animation"}}
+{"identifier":"a89383f1a4302676","fields":{"label":"Physical"}}
+{"identifier":"7b5cb3c7f705671d","fields":{"label":"Plain Text"}}
+{"identifier":"69fc27b4c35c5de6","fields":{"label":"Populate MultiMesh"}}
+{"identifier":"cac3f1f5feb55016","fields":{"label":"Preview Canvas Scale"}}
+{"identifier":"8b890c49e0f2c7e5","fields":{"label":"Project Installation Path:"}}
+{"identifier":"2a44c6aaa424162a","fields":{"label":"Quart"}}
+{"identifier":"06c391682d9307d0","fields":{"label":"Receiving Snapshot (%s/%s MiB)"}}
+{"identifier":"f23d37d53b2ac887","fields":{"label":"Reloading done."}}
+{"identifier":"7d025e1efc395c84","fields":{"label":"Remove Animation Library: %s"}}
+{"identifier":"fd88c422f194403f","fields":{"label":"Remove Remote"}}
+{"identifier":"4f88396338ad7d79","fields":{"label":"Remove from Project List"}}
+{"identifier":"dae9d5a3ae80b650","fields":{"label":"Rename Icon Item"}}
+{"identifier":"aade2bf139aec80f","fields":{"label":"Replace Mode"}}
+{"identifier":"00d360ed321e9f2a","fields":{"label":"Reset Rotation"}}
+{"identifier":"6b983a81e5e8099e","fields":{"label":"Restart"}}
+{"identifier":"3b694fc0747ab317","fields":{"label":"Reverse Gradient"}}
+{"identifier":"37160db14d2bc907","fields":{"label":"Root Type:"}}
+{"identifier":"bed10423624c6b73","fields":{"label":"Run Specific Scene"}}
+{"identifier":"ded3ef7455b27189","fields":{"label":"Save & Restart"}}
+{"identifier":"e3ee181706385555","fields":{"label":"Save scene before running..."}}
+{"identifier":"ea1c510d1ddb7264","fields":{"label":"Scan"}}
+{"identifier":"505c2f4f216f95d1","fields":{"label":"Script Methods Only"}}
+{"identifier":"e4bf7699bab0848d","fields":{"label":"Select All Keys"}}
+{"identifier":"738dc42df407a3ce","fields":{"label":"Select UI Scene:"}}
+{"identifier":"d9da12e167f30b78","fields":{"label":"Select folder to extract material resources"}}
+{"identifier":"5e5203087a4864a2","fields":{"label":"Sepia function."}}
+{"identifier":"ee1e97c4ad993f7a","fields":{"label":"Set Margin"}}
+{"identifier":"b60baf3b70125489","fields":{"label":"Set as Main Scene"}}
+{"identifier":"75c987fb938f1cd3","fields":{"label":"Shift+Drag: Select Control Points"}}
+{"identifier":"1eec0b78f3cedb5d","fields":{"label":"Show in FileSystem"}}
+{"identifier":"e329d3bde0044f52","fields":{"label":"Skip File (not exported)"}}
+{"identifier":"fc39e6a6c638cc78","fields":{"label":"Solid Pixels"}}
+{"identifier":"51c5a1c70c08bd89","fields":{"label":"Spins when the editor window redraws."}}
+{"identifier":"2bdeee5308129ab4","fields":{"label":"Step Into"}}
+{"identifier":"91ea17fae617e4f1","fields":{"label":"Subfolder cannot be one which already exists."}}
+{"identifier":"2e2585cab46e20dc","fields":{"label":"Surface Index"}}
+{"identifier":"296f5f84ef537410","fields":{"label":"Tags are capitalized automatically when displayed."}}
+{"identifier":"79a5aca8cb050d1d","fields":{"label":"The '%s' qualifier is not supported for matrix types."}}
+{"identifier":"b4405a1a297c9d6e","fields":{"label":"The selected class can't be instantiated."}}
+{"identifier":"bbc8e75a44654203","fields":{"label":"This class is marked as experimental."}}
+{"identifier":"3b68f48c1b63d93a","fields":{"label":"This script is a custom type."}}
+{"identifier":"e388c2fad237dca3","fields":{"label":"Toggle Audio Bus Solo"}}
+{"identifier":"2a80084369362cb9","fields":{"label":"Toggle ShaderFile Dock"}}
+{"identifier":"e3788220de82268b","fields":{"label":"Top Orthogonal"}}
+{"identifier":"4dd2c9e50c77cdcb","fields":{"label":"Transition From:"}}
+{"identifier":"35921f6f9ab07377","fields":{"label":"UV Unwrap failed, mesh may not be manifold?"}}
+{"identifier":"27d1a30cf39b6fe8","fields":{"label":"Ungroup Selected"}}
+{"identifier":"ea3550ebdadec15a","fields":{"label":"Unpin this StyleBox as a main style."}}
+{"identifier":"3526200ba9a0b306","fields":{"label":"Uploading scripts..."}}
+{"identifier":"9c18a7aa18789282","fields":{"label":"Value of type '%s' can't provide a length."}}
+{"identifier":"5d55da2f420c9975","fields":{"label":"Video RAM size: %s MB (%s)"}}

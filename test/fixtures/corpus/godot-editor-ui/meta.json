@@ -1,0 +1,31 @@
+{
+  "id": "godot-editor-ui",
+  "title": "Godot Engine editor interface strings",
+  "upstream": "https://github.com/godotengine/godot",
+  "path": "editor/translations/editor/<lang>.po",
+  "commit": "a13da4feb8d8aefc283c3763d33a2f170a18d541",
+  "tag": "4.7.1-stable",
+  "retrieved": "2026-08-07",
+  "license": "MIT",
+  "attribution": "Godot Engine contributors. Editor translations, MIT licensed. https://github.com/godotengine/godot",
+  "register": "short interface labels, 3 to 60 characters",
+  "alignment": "gettext keys an entry by its English source text; the identifier here is the first 16 hex of its SHA-256, so no language file carries another language",
+  "purpose": "the deliberate short-string edge case: the shipped length-ratio thresholds were calibrated on long-form prose and are wrong for material of this shape, which this fixture is here to demonstrate rather than assert",
+  "fields": {
+    "label": "the interface string"
+  },
+  "languages": {
+    "en": 150,
+    "fr": 150,
+    "es": 150,
+    "it": 150,
+    "de": 150
+  },
+  "files": {
+    "en.jsonl": "483f15a0e7816d28637a8c185452eb9a10ac255487b94a2ff80fc92629e39ee1",
+    "fr.jsonl": "fcc4716291db0f4fb9502bb979ac76b89dca7b936d661d4030d444eb2f7f7d41",
+    "es.jsonl": "a0c6fd34cb6a161a76a1fadf12a9fbf1abf69ad6d27f143dead6183edd412aee",
+    "it.jsonl": "979ed260ab0590c05d435a23e0c7376fdbfb9f4cfb6c1d446d7720692ab617f0",
+    "de.jsonl": "5917202fb9bccfb43839c9216f0c2416324f763b1d1db2ec20f658cbe3b8376a"
+  }
+}

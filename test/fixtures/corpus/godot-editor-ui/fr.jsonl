@@ -1,0 +1,150 @@
+{"identifier":"0cc4dbf12d5b7dbc","fields":{"label":" (ouvert récemment)"}}
+{"identifier":"681b75cfa32b7c3f","fields":{"label":"%s peut être déposé ici. Utilisez %s pour déposer, utilisez %s pour annuler."}}
+{"identifier":"70b65a073e24219d","fields":{"label":"'%s n'est pas autorisé en dehors d'une boucle ou d'une instruction '%s'."}}
+{"identifier":"4e7babbb8a3055bf","fields":{"label":"(valeur)"}}
+{"identifier":"f40d45819bc5df6d","fields":{"label":"Recherche un paramètre de texture 3D."}}
+{"identifier":"cef447bb656b596b","fields":{"label":"Accéder en tant que nom unique"}}
+{"identifier":"31bcf7f713a777d5","fields":{"label":"Ajouter une piste de Bézier"}}
+{"identifier":"32bd81860ae0affd","fields":{"label":"Ajouter une propriété métadonnée pour \"%s\""}}
+{"identifier":"ecc322504db0ce31","fields":{"label":"Ajouter une traduction"}}
+{"identifier":"2168839e778ec243","fields":{"label":"Ajouter propriété au synchroniseur"}}
+{"identifier":"2b488c3920ee725e","fields":{"label":"Toutes les étiquettes"}}
+{"identifier":"1c2fc6fcb783ca4e","fields":{"label":"Analyse de la scène %s"}}
+{"identifier":"2a625ba854b06753","fields":{"label":"Position3D de modifications multiples d’une animation"}}
+{"identifier":"202781ecb4d9293c","fields":{"label":"L'identifiant de l'équipe de l'App Store n'est pas spécifiée."}}
+{"identifier":"431af373f3dec1a5","fields":{"label":"Assigner une Resource"}}
+{"identifier":"9552b441ea8b17e9","fields":{"label":"Ré-échantillonne automatiquement CanvasItems"}}
+{"identifier":"5904f883b4a2cda8","fields":{"label":"Précalculer les occulteurs"}}
+{"identifier":"4eabf006abfd201f","fields":{"label":"Mélange suivant modifié"}}
+{"identifier":"28b8bcd6eca22079","fields":{"label":"Boîte délimitante"}}
+{"identifier":"3bb479dcf1b0c881","fields":{"label":"Erreur de CRC lors de la lecture de l'archive ZIP."}}
+{"identifier":"ab5c4b5197b3a4a5","fields":{"label":"Impossible d’accéder au système de fichiers."}}
+{"identifier":"a1f02eece08adb13","fields":{"label":"Annuler la transformation"}}
+{"identifier":"c46bedddb2789d95","fields":{"label":"Curseur en début de ligne"}}
+{"identifier":"aead798b8f427271","fields":{"label":"Modifier le nom de l’animation :"}}
+{"identifier":"cc145cdb639b7a29","fields":{"label":"Changer le dossier d’installation"}}
+{"identifier":"fb7f93ccd93f0077","fields":{"label":"Item à cocher"}}
+{"identifier":"556a8b2b2518b083","fields":{"label":"Effacer l'héritage"}}
+{"identifier":"d88eded51ea1232a","fields":{"label":"Début du clip"}}
+{"identifier":"a9829d39fb079df1","fields":{"label":"Préréglage de couleur"}}
+{"identifier":"07ae7e5ebc50d218","fields":{"label":"Erreur d'évaluation de la condition."}}
+{"identifier":"e9a641608ca5a8f6","fields":{"label":"Les constantes ne peuvent être modifiées."}}
+{"identifier":"976de48a4f4fa91f","fields":{"label":"Convertir en Polygon2D"}}
+{"identifier":"3435070505c26481","fields":{"label":"Copier les informations systèmes"}}
+{"identifier":"4421d93124256c02","fields":{"label":"Impossible de trouver l’exécutable signtool à \"%s\"."}}
+{"identifier":"01cd3d731fc815c0","fields":{"label":"N’a pas pu créer une seule forme de collision."}}
+{"identifier":"608cfeafcea0c649","fields":{"label":"Créer des points d'émission depuis le nœud"}}
+{"identifier":"a4f74ce5f5283e7a","fields":{"label":"Créer un Polygon3D"}}
+{"identifier":"206da6be482bc74c","fields":{"label":"Créez la forme le long de l'axe Y local."}}
+{"identifier":"c6115ecc0739622a","fields":{"label":"Personnalisé (séparé par des virgules) :"}}
+{"identifier":"83a337df989e2abe","fields":{"label":"Exportation de la console de débogage"}}
+{"identifier":"74f60155d8db3172","fields":{"label":"Supprimer l'animation"}}
+{"identifier":"9425c014762b1b8c","fields":{"label":"Supprimer le groupe « %s » et toutes ses références ?"}}
+{"identifier":"1f393ee19b6771ed","fields":{"label":"Désélectionner tous les items de constantes visibles."}}
+{"identifier":"43fad80ff60e9f78","fields":{"label":"Désactiver le nom unique de la scène"}}
+{"identifier":"7d22ec7b6b4ebe1d","fields":{"label":"Divise un vecteur 4D par un vecteur 4D."}}
+{"identifier":"4d1f1689ae2e8ae6","fields":{"label":"Glisser et déposer des données"}}
+{"identifier":"cda9517bc4cdf17e","fields":{"label":"ERREUR : Impossible de charger la ressource !"}}
+{"identifier":"727c761bef3c2610","fields":{"label":"Modifier le polygone (supprimer un point)"}}
+{"identifier":"ef89741147844fd5","fields":{"label":"Paramètres de l’éditeur…"}}
+{"identifier":"da77dc5bc927062a","fields":{"label":"Activer le(s) nom(s) unique(s) de scène"}}
+{"identifier":"54b847a987dc3794","fields":{"label":"Erreur - Impossible de créer le shader dans le système de fichiers."}}
+{"identifier":"9271bc884d7a9faa","fields":{"label":"Erreur de démarrage du serveur HTTP : %d."}}
+{"identifier":"9f8425adef357ffc","fields":{"label":"Agrandir le port de sortie"}}
+{"identifier":"ad3ed3941c1066da","fields":{"label":"Un identifiant ou '[' est attendu après le type."}}
+{"identifier":"4a50d574196cd1cb","fields":{"label":"Exporter les icônes"}}
+{"identifier":"3a2d0d1787aeff74","fields":{"label":"Expression à évaluer"}}
+{"identifier":"2562923ad36bab18","fields":{"label":"Échec lors de la création du sous-dossier « _CodeSignature »."}}
+{"identifier":"3892917e55356cc2","fields":{"label":"Fonctionnalités (%d de %d définies)"}}
+{"identifier":"033955d469b620d6","fields":{"label":"Remplissage"}}
+{"identifier":"bf0e5179cb962af6","fields":{"label":"Correspondance précédente"}}
+{"identifier":"990fbe3c496ea615","fields":{"label":"Focaliser l’origine"}}
+{"identifier":"393c57bd08a3a66e","fields":{"label":"Fragment"}}
+{"identifier":"59b088e4b22b324a","fields":{"label":"Recherche approximative"}}
+{"identifier":"326158ae369381dc","fields":{"label":"Temps de Génération (sec) :"}}
+{"identifier":"3c6b16fa0a3ae81a","fields":{"label":"Aller au signet précédent"}}
+{"identifier":"472b28041874c5d0","fields":{"label":"Paramètres de la grille"}}
+{"identifier":"4450239cfd601d9c","fields":{"label":"Aimanter aux demi pixels"}}
+{"identifier":"584df2670cb1b161","fields":{"label":"Appuyer sur Maj. lors du clic sur l’icône en forme de clé pour ignorer cette boîte de dialogue."}}
+{"identifier":"728c1acbd7da1fe2","fields":{"label":"Importer un thème..."}}
+{"identifier":"c2a425056ae454ae","fields":{"label":"Valeur initiale du compteur."}}
+{"identifier":"3a5e81160c7ee50f","fields":{"label":"Installer un modèle de compilation Android…"}}
+{"identifier":"7be0ab0497898b84","fields":{"label":"« Info.plist » non valide, pas d’identifiant de bundle."}}
+{"identifier":"016f04bcf39a600a","fields":{"label":"Version de fichier non valide."}}
+{"identifier":"ad319254c68aadb0","fields":{"label":"Version du produit non valide."}}
+{"identifier":"f5a942cc43e616c9","fields":{"label":"Mouvement du contrôleur sur l’axe %d (%s) d’une valeur de %.2f"}}
+{"identifier":"97ee1b8dd0d5456b","fields":{"label":"Kio"}}
+{"identifier":"cd434dffc9ad0779","fields":{"label":"De Gauche à Droite, de Bas en Haut"}}
+{"identifier":"28e52c22ca44c8ab","fields":{"label":"Interpolation linéaire de deux vecteurs avec scalaire."}}
+{"identifier":"f86826593cf4de20","fields":{"label":"Charger…"}}
+{"identifier":"41511832eead1982","fields":{"label":"Verrouiller les transformations à l’axe Z"}}
+{"identifier":"f34c2871387e7dea","fields":{"label":"Symétriser les poignées tangentes (Tangente Automatique)"}}
+{"identifier":"0e52f6b9d02515c5","fields":{"label":"Markdown"}}
+{"identifier":"8af8ebcca498eae6","fields":{"label":"Axe vers le haut du maillage :"}}
+{"identifier":"dea79332147ffe1f","fields":{"label":"Min"}}
+{"identifier":"d2ea1516fbd01374","fields":{"label":"Moniteurs"}}
+{"identifier":"d6a88b84b74b1ef0","fields":{"label":"Mode déplacement"}}
+{"identifier":"0ab72673b0e023af","fields":{"label":"Multiplie deux scalaires à virgule flottante."}}
+{"identifier":"ece76e2057dd3d85","fields":{"label":"FPS le plus proche : %d"}}
+{"identifier":"fce5b5ca0d6dfde5","fields":{"label":"Nouveau nom de disposition"}}
+{"identifier":"418a43b730b6f75a","fields":{"label":"Pas de tailles de police trouvées."}}
+{"identifier":"6130a35928c4d0f6","fields":{"label":"Aucune source de surface spécifiée."}}
+{"identifier":"0c116906863f6ac9","fields":{"label":"Des normales sont requises pour le dépliage de lghtmap."}}
+{"identifier":"5548b6ac1b014025","fields":{"label":"Calque d'occlusion %d"}}
+{"identifier":"3883a4f48ffcc021","fields":{"label":"Ouvrir l’éditeur"}}
+{"identifier":"5bdb60dbbbe0a759","fields":{"label":"Ouvrir une liste de sous-ressources."}}
+{"identifier":"d0db8b5e364b6989","fields":{"label":"Options"}}
+{"identifier":"b24963ea2cbc74b9","fields":{"label":"Écraser"}}
+{"identifier":"9df531e9e7779ea2","fields":{"label":"Paramètre modifié : %s"}}
+{"identifier":"27226e681fe58b3a","fields":{"label":"Animation collée"}}
+{"identifier":"a89383f1a4302676","fields":{"label":"Physique"}}
+{"identifier":"7b5cb3c7f705671d","fields":{"label":"Texte brut"}}
+{"identifier":"69fc27b4c35c5de6","fields":{"label":"Remplir la MultiMesh"}}
+{"identifier":"cac3f1f5feb55016","fields":{"label":"Prévisualiser l’échelle du Canvas"}}
+{"identifier":"8b890c49e0f2c7e5","fields":{"label":"Chemin d'installation du projet :"}}
+{"identifier":"2a44c6aaa424162a","fields":{"label":"Quartique"}}
+{"identifier":"06c391682d9307d0","fields":{"label":"Réception de snapshot (%s/%s MiB)"}}
+{"identifier":"f23d37d53b2ac887","fields":{"label":"Rechargement terminé."}}
+{"identifier":"7d025e1efc395c84","fields":{"label":"Retirer la bibliothèque d’animation : %s"}}
+{"identifier":"fd88c422f194403f","fields":{"label":"Retirer le dépôt distant"}}
+{"identifier":"4f88396338ad7d79","fields":{"label":"Supprimer de la liste des projets"}}
+{"identifier":"dae9d5a3ae80b650","fields":{"label":"Renommer l'item d'icône"}}
+{"identifier":"aade2bf139aec80f","fields":{"label":"Mode de remplacement"}}
+{"identifier":"00d360ed321e9f2a","fields":{"label":"Réinitialiser la rotation"}}
+{"identifier":"6b983a81e5e8099e","fields":{"label":"Redémarrer"}}
+{"identifier":"3b694fc0747ab317","fields":{"label":"Inverser le gradient"}}
+{"identifier":"37160db14d2bc907","fields":{"label":"Type de racine :"}}
+{"identifier":"bed10423624c6b73","fields":{"label":"Exécuter scène spécifique"}}
+{"identifier":"ded3ef7455b27189","fields":{"label":"Enregistrer et redémarrer"}}
+{"identifier":"e3ee181706385555","fields":{"label":"Enregistrer la scène avant de l’exécuter…"}}
+{"identifier":"ea1c510d1ddb7264","fields":{"label":"Scanner"}}
+{"identifier":"505c2f4f216f95d1","fields":{"label":"Méthodes de script seulement"}}
+{"identifier":"e4bf7699bab0848d","fields":{"label":"Sélectionner toutes les clés"}}
+{"identifier":"738dc42df407a3ce","fields":{"label":"Sélectionner une scène UI :"}}
+{"identifier":"d9da12e167f30b78","fields":{"label":"Sélectionner le dossier duquel extraire les ressources de matériau"}}
+{"identifier":"5e5203087a4864a2","fields":{"label":"Fonction Sepia."}}
+{"identifier":"ee1e97c4ad993f7a","fields":{"label":"Définir la marge"}}
+{"identifier":"b60baf3b70125489","fields":{"label":"Définir comme scène principale"}}
+{"identifier":"75c987fb938f1cd3","fields":{"label":"Maj+Glisser : Sélectionner les points de contrôle"}}
+{"identifier":"1eec0b78f3cedb5d","fields":{"label":"Montrer dans le système de fichiers"}}
+{"identifier":"e329d3bde0044f52","fields":{"label":"Passer le fichier (non exporté)"}}
+{"identifier":"fc39e6a6c638cc78","fields":{"label":"Pixels pleins"}}
+{"identifier":"51c5a1c70c08bd89","fields":{"label":"Tourne lorsque la fenêtre de l’éditeur est redessinée."}}
+{"identifier":"2bdeee5308129ab4","fields":{"label":"Rentrer"}}
+{"identifier":"91ea17fae617e4f1","fields":{"label":"Un sous-dossier avec ce nom existe déjà."}}
+{"identifier":"2e2585cab46e20dc","fields":{"label":"Indexe de surface"}}
+{"identifier":"296f5f84ef537410","fields":{"label":"Les balises sont automatiquement en majuscules lorsqu'affichées."}}
+{"identifier":"79a5aca8cb050d1d","fields":{"label":"Le qualificatif '%s' n'est pas pris en charge pour les types matrice."}}
+{"identifier":"b4405a1a297c9d6e","fields":{"label":"La classe sélectionnée ne peut pas être instanciée."}}
+{"identifier":"bbc8e75a44654203","fields":{"label":"Cette classe a été annotée comme étant expérimentale."}}
+{"identifier":"3b68f48c1b63d93a","fields":{"label":"Ce script est un type personnalisé."}}
+{"identifier":"e388c2fad237dca3","fields":{"label":"Activer/désactiver le mode solo du Bus Audio"}}
+{"identifier":"2a80084369362cb9","fields":{"label":"Activer/Désactiver le dock Shaderfile"}}
+{"identifier":"e3788220de82268b","fields":{"label":"Haut orthogonal"}}
+{"identifier":"4dd2c9e50c77cdcb","fields":{"label":"Transition à partir de :"}}
+{"identifier":"35921f6f9ab07377","fields":{"label":"Le dépliage UV a échoué, le maillage n’est peut-être pas (« manifold ») ?"}}
+{"identifier":"27d1a30cf39b6fe8","fields":{"label":"Dégrouper la sélection"}}
+{"identifier":"ea3550ebdadec15a","fields":{"label":"Désépingler cette StyleBox comme style principal."}}
+{"identifier":"3526200ba9a0b306","fields":{"label":"Téléversement des scripts…"}}
+{"identifier":"9c18a7aa18789282","fields":{"label":"La valeur de type '%s' ne peut pas fournir de longueur."}}
+{"identifier":"5d55da2f420c9975","fields":{"label":"Taille de la mémoire vidéo : %s MB (%s)"}}

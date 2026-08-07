@@ -48,14 +48,47 @@ The shipped bounds are **0.45 to 2.25** on
 `translated.length / max(source.length, 1)` over the concatenated translatable
 fields.
 
-Those numbers were calibrated on **one language pair over one corpus of
-long-form technical prose**. That is the entire evidential basis. Any other
-pair, and any other shape of text, is unmeasured: not known to be fine, not
-known to be wrong, unmeasured.
+Those numbers were *chosen* on one language pair over one corpus of long-form
+technical prose. They have since been *measured*, and the measurement is
+`test/calibration.test.ts` rather than a paragraph: it reads the committed
+fixture corpus, discovers every ordered language pair in it, and fails when one
+crosses a stated bound.
 
-The failure mode is predictable. A corpus of short interface strings trips the
-lower bound on nearly every row, because a three-character difference is a large
-ratio when the string is six characters long. If most of your rows are flagged
+### What the measurement says
+
+Forty ordered pairs drawn from English, French, Spanish, Italian and German,
+over two deliberately different registers. Percentages are the share of
+human-translated rows the length check alone would send to review.
+
+| Corpus | Register | Rows | Pairs | Worst pair | Overall |
+|---|---|---|---|---|---|
+| Kubernetes glossary | reference prose, a paragraph per row | 728 aligned | 20 | 5.6% (fr -> de) | 2.2% |
+| Godot editor strings | interface labels, 3 to 60 characters | 3000 aligned | 20 | 2.7% (it -> en) | 0.9% |
+
+Two results worth stating plainly, because both contradict what this page used
+to say.
+
+**The prose corpus flags more than the short-string corpus, not less.** The
+predicted failure mode - short strings tripping the lower bound because a
+three-character difference is a large ratio on a six-character string - is real
+arithmetic, but it needs strings far shorter than an interface actually has. At
+the shortest tail of the Godot material (English of 12 characters or fewer) the
+flag rate is 3% to 7%, not "nearly every row". The median English label is 20
+characters and translates comfortably inside the bounds.
+
+**The rows that do flag are mostly true positives.** Every flagged row in the
+Kubernetes corpus is one language's entry carrying a long detail section that
+another language's translation omits - `cluster`, `control-plane`,
+`replica-set`. That is exactly what the check is for. It is a small sample and
+not a general claim, but on this material the check is finding dropped content
+rather than inventing noise.
+
+### What it does not license
+
+A pair the fixtures do not contain is **unmeasured**, not blessed: nothing here
+says anything about English into Japanese, or about any pair outside those five
+languages. And a job whose rows are single words is still a job whose ratio can
+move a long way for a small absolute change. If most of your rows are flagged
 for length, the threshold is wrong for your corpus, not your corpus for the
 threshold:
 
@@ -66,10 +99,8 @@ const job: TranslationJob = {
 };
 ```
 
-**Measured distributions per language pair will appear here** once the fixture
-corpus lands, described as what they are: a measurement over that material. A
-default threshold nobody has measured is a number nobody will dare change later,
-which is why the scope is stated rather than implied.
+Adding a fixture source adds its pairs to the calibration automatically, which
+is the cheapest way to extend the claim. See `test/fixtures/README.md`.
 
 ### A known quirk
 
