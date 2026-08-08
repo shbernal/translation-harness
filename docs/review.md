@@ -439,6 +439,91 @@ rather than with the defaults, which is both what a provider honouring the
 schema would do and the only way its answers pass `validateReview` for a job
 that overrode them.
 
+## The three-way decision
+
+A review run only ever proposes. Somebody then goes through it and decides, per
+field, one of exactly three things: **keep** the value that was reviewed, take
+the reviewer's **proposal**, or write a **custom** rewrite. That is universal,
+and so is turning those choices into the text the corpus should read.
+
+```ts
+const { resolved, counts, warnings } = resolveDecisions(
+  await review.snapshot(),
+  new Map([['AC-1', { name: { kind: 'proposal' }, description: { kind: 'keep' } }]]),
+);
+resolved; // Map<rowNumber, Fields> - every row of the run
+counts;   // { keep: 1, proposal: 1, custom: 0 }
+```
+
+What is **not** universal is where the choices come from: a workbook column, a
+web form, a diff somebody accepted at a terminal. Nothing here knows about any
+of them, which is why `resolveDecisions` takes a plain map and not a file.
+
+`keep` is named for what it does rather than for where the value came from. It
+keeps the value under review, which is the accepted corpus target for an
+ordinary run and the base run's resolved output for a chained one; those are the
+same thing only when the run does not chain.
+
+**Decisions come in keyed by identifier and resolve out keyed by row number.**
+That asymmetry is deliberate. A decision comes from outside the run, where the
+identifier is the only key that survives the round trip - a spreadsheet carries
+an identifier column, somebody sorts and filters it, and nobody is looking at a
+row number. The value that comes back is in the run's own terms, so it is keyed
+the way the run keys itself, exactly as `resolveRunOutput` is.
+
+Every row of the run is resolved, decided or not, because a review run is a
+fixed object covering a whole corpus. A caller who wants only the rows somebody
+touched has the decision map to filter by.
+
+### Nothing is retyped
+
+The proposals in the snapshot were normalized when `validateReview` accepted
+them, so they arrive already in the target language's typography. A rewrite a
+person typed is written exactly as typed: a library that silently retypes
+somebody's quotation marks is editing a decision it was asked to record. That is
+also why this needs no `ReviewJob`.
+
+### The degenerate cases warn rather than refuse
+
+Each one is a cell somebody filled in wrong, and the other ten thousand cells
+are still worth publishing. All of them fall back to the value under review,
+which is the choice that changes nothing:
+
+| what happened | what it does |
+|---|---|
+| `proposal` chosen, the reviewer proposed nothing there | keeps, warns |
+| `custom` chosen, no rewrite supplied | keeps, warns |
+| a decision this library does not recognize | keeps, warns |
+| a field name the run does not have | ignores, warns **once** rather than once per row |
+| an identifier the run does not have | ignores, warns |
+
+An **empty** rewrite counts as no rewrite. Reading it as "blank this field"
+would let a slip delete text with no trace; blanking a field is worth typing a
+space for.
+
+`counts` tallies what was *chosen*, so a choice that could not be honoured still
+counts under it. The tally answers "what did the human do"; the warnings say
+what came of it.
+
+The one thing it refuses is a snapshot with two rows under one identifier, since
+a decision names a row by identifier and there would be no answer to which of
+them it meant. `deriveReviewRun` already rejects such a corpus, so this only
+fires on a snapshot somebody assembled by hand.
+
+### Its sibling, and where they disagree
+
+`resolveRunOutput` answers the same question - what does this run say the corpus
+should read - by asking the *run* rather than a person, which is what
+[chaining](#chaining-reviewing-what-the-last-stage-produced) needs, because
+there is no human in that loop.
+
+They differ in one visible place. A `pass` row can carry a proposal: the store
+keeps a verdict and a proposal as separate claims, and `validateReview`
+normalizes a proposal even on a `pass`. `resolveRunOutput` ignores it, having
+nobody to ask. `resolveDecisions` honours it if somebody asks for it, because a
+person reading the verdict and the proposal side by side may well prefer the
+proposal.
+
 ## The graded vocabularies
 
 **Severity and confidence are closed lists, and the reason is measured.**

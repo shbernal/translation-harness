@@ -83,6 +83,16 @@ export {
   type RecordedEvidence,
   recordedEvidence,
 } from './review/consistency.ts';
+// The three-way decision, resolved into final text. Its sibling above answers
+// the same question for a chained run, where there is no human to ask.
+export {
+  REVIEW_DECISION_KINDS,
+  type ReviewDecision,
+  type ReviewDecisionKind,
+  type ReviewDecisionResult,
+  type ReviewDecisions,
+  resolveDecisions,
+} from './review/decide.ts';
 // Opening a review run. The id is derived from every input rather than
 // generated, which is what makes init idempotent and makes a changed input a
 // different run instead of a polluted one.

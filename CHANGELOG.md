@@ -6,6 +6,18 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `resolveDecisions`: the three-way decision - keep the value under review, take
+  the reviewer's proposal, write a custom rewrite - resolved into the text the
+  corpus should read. Universal; *where* the choices come from (a workbook
+  column, a form, a diff accepted at a terminal) is not, so it takes a plain map
+  and knows about none of them. Decisions come in keyed by identifier, because
+  that is the only key that survives a round trip through something a human
+  sorted, and resolve out keyed by row number, because that is how a run keys
+  itself. Nothing is retyped: a proposal was normalized when `validateReview`
+  accepted it, and a rewrite somebody typed is written as typed. The degenerate
+  cases warn rather than refuse and all fall back to the value under review; a
+  field name the run does not have is reported once rather than once per row.
+  See [docs/review.md](docs/review.md#the-three-way-decision).
 - `runReview`: executing a review run, as a configuration of `runAgentBatch`.
   The pool, the atomic claim, the retry ladder, the quota pause, the abort path
   and the per-attempt evidence are the ones already shipped, so **review
