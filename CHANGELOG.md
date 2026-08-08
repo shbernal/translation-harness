@@ -6,6 +6,26 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `buildConsistency`, `promptEvidence` and `recordedEvidence`: every source
+  string the corpus renders more than one way, per field, attached to the rows it
+  affects. The library derives this rather than taking it from the host because
+  **its output hash is one of a review run's identity inputs** - two hosts
+  analysing one corpus their own two ways would disagree about what run they are
+  looking at. Entries are ordered **by codepoint, not by `localeCompare`**, so the
+  analysis is a property of the corpus and not of the machine's default locale;
+  every corpus available to check orders identically either way, so nothing moved
+  to buy that. A row with nothing to report gets `{}`, which is what makes the
+  prompt's evidence block vanish rather than appear empty. See
+  [docs/review.md](docs/review.md#consistency-evidence).
+- `ReviewJob.extraInputs` and `extraInputsDigest`: a host folds its own inputs - a
+  termbase digest, a style-guide revision - into a derived run id without the
+  library knowing what any of them are. Hashed in sorted key order; **an empty or
+  absent bag digests to the empty string**, so a host that sets nothing gets the
+  run ids it got before the field existed. A non-string value is refused rather
+  than serialized, because `JSON.stringify` drops `undefined` silently and two
+  different sets of inputs agreeing on one id is the exact collision the mechanism
+  prevents. Same shape, and the same reason, as `promptSalt` on the translate
+  side. See [docs/review.md](docs/review.md#host-inputs-and-the-run-id).
 - The review contract: `ReviewJob`, `buildReviewPrompt`, `buildReviewSchema`,
   `writeReviewSchema` and `validateReview`, in a new `review` layer. A review job
   **carries** the `TranslationJob` it judges rather than restating it, so its

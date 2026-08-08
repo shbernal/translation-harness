@@ -55,3 +55,55 @@ export const GOLDEN_REVIEW_ROW = {
 export const GOLDEN_EVIDENCE: RowEvidence = {
   name: ["Politique de controle d'acces", 'Politique de gestion des acces'],
 };
+
+/**
+ * The corpus the consistency golden is built from, and the corpus
+ * {@link GOLDEN_EVIDENCE} is the analysis of - which is the point of it being
+ * four rows rather than two. `AC-1` is {@link GOLDEN_REVIEW_ROW}, so the
+ * evidence in the bilingual golden prompt is a value this corpus produces
+ * rather than a value a test author typed.
+ *
+ * Between them the rows cover every branch of the analysis: one source rendered
+ * two ways (`name` on AC-1 and AC-2), one rendered consistently (`name` on AC-3
+ * and AC-4, which produces no entry at all), one whose target value is missing
+ * (`description` on AC-4, which renders as the empty string rather than
+ * vanishing), and one source that appears once (`description` on AC-1).
+ */
+export const GOLDEN_CORPUS = [
+  GOLDEN_REVIEW_ROW,
+  {
+    identifier: 'AC-2',
+    source: {
+      name: 'Access Control Policy',
+      type: 'passthrough',
+      description: 'The organization reviews the policy.',
+    },
+    target: {
+      name: 'Politique de gestion des acces',
+      type: 'passthrough',
+      description: 'L organisation reexamine la politique.',
+    },
+  },
+  {
+    identifier: 'AU-1',
+    source: {
+      name: 'Audit Records',
+      type: 'passthrough',
+      description: 'The system retains records.',
+    },
+    target: {
+      name: 'Registres d audit',
+      type: 'passthrough',
+      description: 'Le systeme conserve les enregistrements.',
+    },
+  },
+  {
+    identifier: 'AU-2',
+    source: {
+      name: 'Audit Records',
+      type: 'passthrough',
+      description: 'The system retains records.',
+    },
+    target: { name: 'Registres d audit', type: 'passthrough' },
+  },
+] as const;

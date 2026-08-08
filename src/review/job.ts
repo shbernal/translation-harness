@@ -78,6 +78,21 @@ export interface ReviewJob {
    */
   readonly terminology?: string;
 
+  /**
+   * Anything else this run's identity depends on, as opaque strings.
+   *
+   * A run id is derived from every input the library knows about. An input only
+   * the host knows about - the digest of a termbase, the revision of a style
+   * guide, the version of an upstream analysis - reaches the derivation here,
+   * hashed in sorted key order and never interpreted. Absent or empty
+   * reproduces the run id of a job that never had the field, so adopting the
+   * mechanism costs nothing to a host that does not.
+   *
+   * Values are strings because they are hashed, not read. Put a digest here,
+   * not a document.
+   */
+  readonly extraInputs?: Readonly<Record<string, string>>;
+
   /** Overrides the severity scale. See {@link DEFAULT_SEVERITY_LEVELS}. */
   readonly severityLevels?: readonly string[];
   /** Overrides the confidence scale. See {@link DEFAULT_SEVERITY_LEVELS}. */

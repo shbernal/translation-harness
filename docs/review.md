@@ -38,12 +38,13 @@ is reviewing a corpus that does not exist, and carrying the job makes that
 impossible rather than unlikely. From it come the fields, both languages, and
 `normalize`.
 
-Four optional pieces:
+Five optional pieces:
 
 | Field | What it does |
 |---|---|
 | `reviewFields` | Narrows what is judged. Defaults to the job's translatable fields. |
 | `terminology` | Standing reference text, rendered as the prompt's `TERMINOLOGY` block. |
+| `extraInputs` | Host inputs the run id must depend on. See [below](#host-inputs-and-the-run-id). |
 | `severityLevels` | Overrides the severity scale. |
 | `confidenceLevels` | Overrides the confidence scale. |
 
@@ -105,6 +106,95 @@ without knowing anything about the guidance above it.
 
 Evidence is emitted in the job's field order, not in the order the caller
 happened to build the object, so the prompt bytes do not depend on that.
+
+## Consistency evidence
+
+`buildConsistency(job, rows)` finds every source string the corpus renders more
+than one way, per field. It is the only reference material in a review run that
+the library derives rather than receives, and the reason it is not left to the
+host is that **its output hash is one of the run id's inputs**: two hosts
+analysing one corpus their own two ways would disagree about what run they are
+looking at, which is the thing a derived run id exists to prevent.
+
+It knows nothing about words, morphology or segmentation. It knows that the same
+source string came back as two different target strings somewhere in the same
+corpus, which is a fact about the corpus rather than a judgement about either
+rendering. Deciding which rendering is right is the reviewer's job, and that is
+why the evidence is shown to the model instead of being resolved before it.
+
+Three rules decide what counts:
+
+- A row with **no source value** for a field contributes nothing to that field.
+- A row with a source value and **no target value** contributes the empty string
+  as a rendering. A field present in some rows and absent in others is exactly
+  the kind of inconsistency worth showing a reviewer, and dropping it would hide
+  it.
+- A source rendered **one** way produces no entry at all. Every analysed field
+  still gets a key, so the serialization has the same shape whether or not
+  anything was found.
+
+Two views are taken off one analysis:
+
+| | Shape | Who reads it |
+|---|---|---|
+| `promptEvidence(analysis, source)` | `{ field: renderings }` | the model |
+| `recordedEvidence(analysis, source)` | `{ field: { source, renderings } }` | the run's stored snapshot |
+
+The stored form carries the source string the renderings are about. The prompt
+does not need it - the row's own snapshot already shows the source next to the
+current rendering - but a stored row is read back long after the corpus has
+moved, and evidence that does not say what it is evidence about is a list of
+strings.
+
+**A row with nothing to report gets `{}`, and that is load bearing.** `{}` is
+what makes the evidence block vanish from the prompt entirely rather than appear
+empty, which is the producing end of the guarantee [the prompt
+section](#the-prompt) states.
+
+### Ordering is by codepoint, deliberately
+
+`analysis.text` is the exact bytes written to the run directory, and
+`analysis.hash` is over those bytes, newline included. Entries within a field are
+ordered **by codepoint**, not by `localeCompare`.
+
+This is not a style preference. `localeCompare` with no locale argument reads the
+runtime's default locale, so one corpus analysed on two machines can serialize in
+two orders and hash to two different run ids - a derived identity turned into an
+accident of where it was computed. A collator pinned to one locale fixes the
+machine but not the decade, because collation data moves with ICU. Codepoint
+order is the only comparison that is the same everywhere and stays the same, and
+nothing reads this file for its ordering: it is an input to a hash, and what a
+human reads is built from the per-row views above.
+
+## Host inputs and the run id
+
+A review run id is derived from every input, which is what makes init idempotent
+and makes "the guidance changed" impossible to confuse with "this is a different
+corpus". A host with an input of its own - the digest of a termbase, the revision
+of a style guide, the version of some upstream analysis - has to be able to reach
+that derivation, or its runs collide: two materially different reviews resolving
+to one id, the second recognised as the first and never executed.
+
+```ts
+const job: ReviewJob = { ...base, extraInputs: { termbase: sha(termbaseText) } };
+extraInputsDigest(job);   // sha256 over the bag, in sorted key order
+```
+
+Values are opaque strings, hashed and never interpreted. Put a digest here, not a
+document.
+
+**An empty or absent bag digests to the empty string**, and that is a contract
+term rather than an implementation detail: the derivation appends the digest to
+its input rather than joining it in with the rest, so a job that sets nothing
+produces exactly the run id it would have produced before `extraInputs` existed.
+`promptSalt` earns the same guarantee the same way, and for the same reason - a
+mechanism a host can decline to use must cost nothing to the hosts declining it.
+
+A non-string value is **refused** rather than serialized. `JSON.stringify` drops
+an `undefined` value silently, which would make `{ termbase: undefined }` digest
+identically to `{}` - the one collision this whole mechanism exists to prevent.
+For the same reason `{ termbase: '' }` is not the same as no key at all: a host
+that declares an input and has nothing in it this time has still declared it.
 
 ## The graded vocabularies
 

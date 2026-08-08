@@ -74,6 +74,16 @@ export type { ProviderName, ProviderOptions } from './provider/types.ts';
 // lists, and the reason is measured rather than stylistic - see
 // [docs/review.md](docs/review.md#the-graded-vocabularies).
 export {
+  buildConsistency,
+  type ConsistencyAnalysis,
+  type ConsistencyEntry,
+  type ConsistencyRow,
+  promptEvidence,
+  type RecordedEvidence,
+  recordedEvidence,
+} from './review/consistency.ts';
+export { extraInputsDigest } from './review/inputs.ts';
+export {
   confidenceLevelsFor,
   DEFAULT_CONFIDENCE_LEVELS,
   DEFAULT_SEVERITY_LEVELS,
