@@ -424,6 +424,36 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
       });
     },
 
+    /**
+     * The clock-free half of `reclaimStale`, and it reads the run rather than
+     * the timestamp: `run_id IN (SELECT ... WHERE status != 'running')` is the
+     * whole test. `finishRun` runs after every worker has returned, so a run
+     * with a settled status owns nothing, and the same condition already
+     * governs which dangling attempts `reclaimStale` closes.
+     *
+     * `run_id IS NOT NULL` is not redundant with the subquery - it says out
+     * loud that a row claimed before the column existed is deliberately left
+     * for the cutoff, because there is no run to ask about it.
+     */
+    async releaseSettledRunClaims(): Promise<number> {
+      return tx(db, () => {
+        db.prepare(
+          `UPDATE attempts SET finished_at = ?, outcome = 'failed', error_category = 'abandoned',
+             error_message = 'runner ended before recording the attempt result'
+           WHERE outcome IS NULL AND run_id IN (SELECT run_id FROM runs WHERE status != 'running')`,
+        ).run(utcnow());
+        const cursor = db
+          .prepare(
+            `UPDATE items SET status = 'pending', run_id = NULL,
+                    last_error = 'released: the run holding this row had already ended', updated_at = ?
+             WHERE status = 'running' AND run_id IS NOT NULL
+               AND run_id IN (SELECT run_id FROM runs WHERE status != 'running')`,
+          )
+          .run(utcnow());
+        return cursor.changes as number;
+      });
+    },
+
     async translationsByIdentifier(): Promise<Map<string, Fields>> {
       const rows = db
         .prepare('SELECT identifier, target_json FROM items WHERE target_json IS NOT NULL')

@@ -28,7 +28,10 @@ Two mechanisms guard it:
    the mechanism.
 
 `reclaimStale` is the third line of defence, for a process that was killed
-rather than stopped.
+rather than stopped. `releaseSettledRunClaims` is the sharper version of it for
+the case where the killed run did manage to record that it ended: it releases
+that run's rows immediately rather than waiting out a cutoff meant for processes
+that might still be alive. Both are host-invoked; neither runs on its own.
 
 ## Claiming
 

@@ -2,6 +2,21 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- `TranslationStore.releaseSettledRunClaims()`: release rows still claimed by a
+  run that has already ended, without waiting out `reclaimStale`'s cutoff. A
+  cutoff exists to distinguish a dead process from a slow one; a run recorded as
+  anything other than `running` has already answered that, because `finishRun`
+  is called after every worker has returned. Under repeated kills the previous
+  behaviour let the stranded set grow faster than it drained. Rows claimed with
+  no `run_id` predate the column and stay with `reclaimStale`.
+
+  This adds a method to the store interface. An existing implementation of
+  `TranslationStore` will need it; `storeConformance` has a case for it.
+
 ## 0.1.0
 
 The first release. `0.x` means the API can still move; anything that changes

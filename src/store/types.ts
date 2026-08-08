@@ -196,6 +196,22 @@ export interface TranslationStore {
   reclaimStale(ageMinutes?: number): Promise<number>;
 
   /**
+   * Release rows still claimed by a run that has already ended, without waiting
+   * on a clock. Returns the number released.
+   *
+   * `reclaimStale` needs a cutoff because it cannot tell a dead process from a
+   * slow one. When the owning run is recorded as anything other than `running`
+   * that question is already answered: `finishRun` is called after every worker
+   * has returned, so a settled run has nothing in flight and any row it still
+   * holds is stranded. Waiting 30 minutes to release it accomplishes nothing,
+   * and under repeated kills the stranded set grows faster than it drains.
+   *
+   * Rows claimed with no `run_id` are left alone - they predate the column and
+   * cannot be attributed, so they remain `reclaimStale`'s business.
+   */
+  releaseSettledRunClaims(): Promise<number>;
+
+  /**
    * Every answered row's translation, keyed by identifier rather than by row
    * number. Row numbers belong to one reading of one corpus, so they are the
    * wrong key the moment two registries are read together; the identifier is

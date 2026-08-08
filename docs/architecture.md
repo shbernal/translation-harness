@@ -93,8 +93,9 @@ The fatal case snapshots the rows it owned rather than failing every row in
 Between a successful `tryClaim` and the two lines that record the row locally,
 **nothing may be awaited**. A row claimed in the registry but missing from the
 run's own list is a row the final sweep will never release: it sits in
-`running`, invisible to every selection filter, until `reclaimStale`'s cutoff
-passes. There is a shouted comment at the call site because the two lines look
+`running`, invisible to every selection filter, and this run will not come back
+to it. Only a later, host-invoked sweep frees it. There is a shouted comment at
+the call site because the two lines look
 like exactly the kind of thing somebody tidies up later.
 
 This is the cost of the store being asynchronous. The synchronous version could
@@ -196,17 +197,23 @@ The consequence reaches consumers: `applySchema` names `node:sqlite` types in
 the published declarations, so **Node 24 typings are needed to compile against
 this package**, not merely to run it.
 
-## Known limitation: stale claims from interrupted runs
+## Releasing stale claims without waiting on a clock
 
-Rows claimed by a run that is already recorded `interrupted` still wait out
-`reclaimStale`'s full cutoff, 30 minutes by default. Under repeated kills the
-stranded set therefore grows faster than it drains, and those rows are invisible
-to every selection filter in the meantime.
+`reclaimStale` needs a cutoff because it cannot tell a dead process from a slow
+one. When the run holding a row is recorded as anything other than `running`,
+that question is already settled: `finishRun` is called after every worker has
+returned, so an ended run has nothing in flight and any row it still holds is
+stranded. `releaseSettledRunClaims()` releases exactly those, immediately, and
+closes their dangling attempts the same way `reclaimStale` does.
 
-`tryClaim` takes a run id and `items` carries the column, which is what makes
-the fix an added query rather than a schema change: release the rows held by
-runs already marked interrupted, without waiting on the clock. The parameter
-went in during the first version precisely so that fix stays cheap.
+It matters most under repeated kills, where the version of this that waited out a
+30-minute cutoff let the stranded set grow faster than it drained - and a
+stranded `running` row is invisible to every selection filter in the meantime,
+so a resume skips it silently.
 
-Workaround today: `reclaimStale(0)` releases everything, so call it when you
-know no run is live.
+Rows claimed with no `run_id` are deliberately left to `reclaimStale`: they
+predate the column, so there is no run to ask about them.
+
+The reason this is a query and not a schema change is that `tryClaim` takes a run
+id and `items` carries the column. Both went in before there was a caller for
+them.

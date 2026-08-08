@@ -224,6 +224,29 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
       }),
     },
     {
+      name: 'releaseSettledRunClaims frees rows held by an ended run and spares a live one',
+      run: withStore(async (store) => {
+        // The point is the *absence* of a clock: nothing here waits, and the two
+        // runs differ only in whether they have been finished.
+        await store.initialize(sampleRecords(3));
+        await store.startRun({ runId: 'dead', model: 'test:model', options: {} });
+        await store.startRun({ runId: 'live', model: 'test:model', options: {} });
+        await store.tryClaim(1, 'dead');
+        await store.tryClaim(2, 'dead');
+        await store.tryClaim(3, 'live');
+
+        equal(await store.releaseSettledRunClaims(), 0, 'nothing is released while both runs run');
+        equal((await store.counts()).running, 3, 'all three rows are still claimed');
+
+        await store.finishRun('dead', 'interrupted');
+        equal(await store.releaseSettledRunClaims(), 2, 'the ended run gives up both its rows');
+        const counts = await store.counts();
+        equal(counts.running, 1, 'the live run keeps its row');
+        equal(counts.pending, 2, 'the released rows are selectable again');
+        equal(await store.releaseSettledRunClaims(), 0, 'a second sweep is a no-op');
+      }),
+    },
+    {
       name: 'startAttempt allocates consecutive numbers per row',
       run: withStore(async (store) => {
         const runId = await seeded(store, 2);
