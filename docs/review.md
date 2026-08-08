@@ -223,8 +223,27 @@ stores over one shared connection, so closing the base run's store would close
 the caller's registry underneath them.
 
 The corpus arrives as data, the same choice `TranslationStore.initialize` makes
-with `SourceRecord`. `Item` from the translate store satisfies `ReviewSourceRow`
-structurally, so a host reading its own registry hands the rows straight over.
+with `SourceRecord`. That is what makes a *filtered* corpus a different run id
+rather than a run with a hole in it, and it is why init does not read a store for
+you.
+
+A host whose corpus does live in the registry reads it back with **`items`**:
+
+```ts
+corpus: await store.items(),   // every row, in row order, whatever its status
+```
+
+`Item` satisfies `ReviewSourceRow` structurally, so there is nothing to map.
+Nothing else on `TranslationStore` will do: `translationsByIdentifier` drops the
+status and the input hash, and `selectCandidates({ redo: true })` excludes
+`running` rows, so a corpus read that way would change shape depending on what
+happened to be executing. Contract term 9 covers `items`, and its load-bearing
+half is that a row with no answer comes back with a `target` of `null` and never
+`{}` - the two hash differently, so a store that conflates them moves every run
+id derived from its corpus.
+
+A host whose corpus lives in a spreadsheet builds the same six values from there
+and is no worse off.
 
 ### The run id is derived, not generated
 

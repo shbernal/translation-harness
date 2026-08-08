@@ -42,7 +42,6 @@ import {
   type Fields,
   initializeReview,
   type ModelProfile,
-  parseFields,
   REVIEW_DECISION_KINDS,
   REVIEW_MOCK_PROVIDER_NAME,
   type ReviewDecision,
@@ -60,7 +59,6 @@ import {
   runReview,
   runTranslation,
   type SqliteStore,
-  type Status,
   sqliteStore,
 } from '../../src/index.ts';
 import { records, reviewJobFor, translationJob } from './corpus.ts';
@@ -138,41 +136,22 @@ function open(): SqliteStore {
   return sqliteStore(REGISTRY, { pathBase: WORK_DIR });
 }
 
-/**
- * The corpus, as `initializeReview` wants it.
- *
- * Producing this is the host's job, and this is the whole of it: init takes the
- * corpus as data rather than reading a store, so that a filtered corpus is a
- * different run id rather than a run with a hole in it. This host keeps its
- * corpus in the registry, so it comes back out of `items` through the `db`
- * handle the concrete store exposes. A host whose corpus lives in a spreadsheet
- * builds the same six values from there and is no worse off.
- */
-function corpusRows(store: SqliteStore): ReviewSourceRow[] {
-  const rows = store.db
-    .prepare(
-      `SELECT row_number, identifier, input_hash, source_json, target_json, status
-         FROM items ORDER BY row_number`,
-    )
-    .all() as unknown as {
-    row_number: number;
-    identifier: string;
-    input_hash: string;
-    source_json: string;
-    target_json: string | null;
-    status: string;
-  }[];
-  return rows.map((row) => ({
-    rowNumber: row.row_number,
-    identifier: row.identifier,
-    inputHash: row.input_hash,
-    source: parseFields(row.source_json),
-    // Null rather than `{}`: a row with no answer and a row with an empty one
-    // hash differently, and conflating them would move the run id.
-    target: row.target_json === null ? null : parseFields(row.target_json),
-    status: row.status as Status,
-  }));
-}
+// The corpus, as `initializeReview` wants it, is `await store.items()` at every
+// call site below - every row, in row order, whatever its status, with an
+// unanswered row's target left `null` rather than `{}` because the two hash
+// differently (store contract term 9). `Item` satisfies `ReviewSourceRow`
+// structurally, so there is nothing to map.
+//
+// Producing the corpus is still the host's job, and that is deliberate: init
+// takes it as *data* rather than reading a store, which is what makes a filtered
+// corpus a different run id rather than a run with a hole in it. A host whose
+// corpus lives in a spreadsheet builds the same six values from there and is no
+// worse off.
+//
+// What `items` fixes is the case where the corpus *does* live in the registry.
+// This was fifteen lines of hand-written SQL here until the reader existed, and
+// the same fifteen lines lived in the private consumer too; that duplication is
+// what put it on the interface.
 
 /** What the flags describe, before anything is opened. */
 function planned(): {
@@ -293,7 +272,7 @@ async function translate(store: SqliteStore): Promise<void> {
 
 async function init(store: SqliteStore): Promise<void> {
   const { job, profileName, profile, baseRunId } = planned();
-  const corpus = corpusRows(store);
+  const corpus = await store.items();
   if (!corpus.length) throw new Error(`No corpus in ${REGISTRY}. Run 'translate' first.`);
 
   if (flags['dry-run']) {
@@ -345,7 +324,7 @@ async function init(store: SqliteStore): Promise<void> {
 async function review(store: SqliteStore): Promise<void> {
   registerReviewMockProvider();
   const { job } = planned();
-  const runId = await runIdFor(store, corpusRows(store));
+  const runId = await runIdFor(store, await store.items());
   const run = store.review(runId);
   if (!(await run.run()))
     throw new Error(`No review run ${runId}. Open it with 'init' and the same flags first.`);
@@ -386,7 +365,7 @@ async function review(store: SqliteStore): Promise<void> {
 }
 
 async function status(store: SqliteStore): Promise<void> {
-  const runId = await runIdFor(store, corpusRows(store));
+  const runId = await runIdFor(store, await store.items());
   const run = store.review(runId);
   const record = await run.run();
   if (!record) throw new Error(`No review run ${runId}. Open it with 'init' first.`);
@@ -433,7 +412,7 @@ async function decide(store: SqliteStore, args: readonly string[]): Promise<void
   if (!(REVIEW_DECISION_KINDS as readonly string[]).includes(kind))
     throw new Error(`Unknown decision '${kind}'. One of: ${REVIEW_DECISION_KINDS.join(', ')}`);
 
-  const runId = await runIdFor(store, corpusRows(store));
+  const runId = await runIdFor(store, await store.items());
   const file = readDecisionFile();
   const forRun = file[runId] ?? {};
   const forRow = forRun[identifier] ?? {};
@@ -445,7 +424,7 @@ async function decide(store: SqliteStore, args: readonly string[]): Promise<void
 }
 
 async function resolve(store: SqliteStore): Promise<void> {
-  const runId = await runIdFor(store, corpusRows(store));
+  const runId = await runIdFor(store, await store.items());
   const run = store.review(runId);
   const snapshot = await run.snapshot();
   if (!snapshot.length) throw new Error(`No review run ${runId}. Open it with 'init' first.`);

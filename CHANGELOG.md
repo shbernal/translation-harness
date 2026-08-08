@@ -2,6 +2,50 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- **`TranslationStore.items()`**: every row of the corpus, in row-number order,
+  whatever its status. `Item` satisfies `ReviewSourceRow` structurally, so opening
+  a review run over a registry-backed corpus is now
+  `initializeReview(store.review, { corpus: await store.items(), ... })` rather
+  than a hand-written query.
+
+  It exists because `initializeReview` takes its corpus as **data** rather than
+  reading a store - which is what makes a filtered corpus a different run id
+  instead of a run with a hole in it - and that left every host whose corpus does
+  live in the registry writing the same fifteen lines of SQL. Two hosts out of two
+  had. Neither existing reader would do: `translationsByIdentifier` drops the
+  status and the input hash, and `selectCandidates({ redo: true })` excludes
+  `running` rows, so a corpus read that way changes shape depending on what
+  happens to be executing.
+
+  It returns an array rather than streaming, deliberately: a review run id is a
+  hash over every row in row order, so the caller it exists for materializes the
+  corpus regardless and an iterator would move that rather than remove it.
+
+- **Store contract term 9**, checked by two new `storeConformance` cases: `items`
+  excludes nothing, `running` included, returns rows in row-number order, and
+  reports a row with no answer as a `target` of `null` and never `{}`. The last is
+  the one that matters - an unanswered row and a row answered with an empty object
+  hash differently, so a store that normalizes one to the other silently moves
+  every review run id derived from the corpus it returns.
+
+  The number is 9 rather than 7 because terms 7 and 8 are `ReviewStore`'s and the
+  contract is numbered in **one sequence across all three store interfaces**, so
+  "term 2" means the same thing wherever it appears. Terms are never renumbered
+  and never reused; a new one takes the next free number rather than the next
+  number on its own interface.
+
+### Changed
+
+- **A custom `TranslationStore` needs `items()`.** One method, and the SQLite
+  implementation is `SELECT * FROM items ORDER BY row_number` mapped through the
+  same row mapper everything else uses. Nothing else changed shape, and no run id
+  moved: the example CLI's derived run id and snapshot hash are byte-identical
+  before and after, from an empty registry and from a populated one.
+
 ## 0.2.0
 
 A second lifecycle, and the runner that now carries both of them.

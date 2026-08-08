@@ -162,7 +162,7 @@ It is two interfaces now, split where the runner was generalized.
 `close` - and it knows a row only as a row number and an identifier.
 **`TranslationStore extends BatchStore<Item>`** adds the translation lifecycle:
 `initialize`, `counts`, `selectCandidates`, `commitSuccess`, `commitPrecomputed`,
-`markItemFailed`, `translationsByIdentifier`. Nothing was removed and nothing
+`markItemFailed`, `translationsByIdentifier`, `items`. Nothing was removed and nothing
 changed shape, so a 0.1 implementation is still a valid one; it simply gained a
 supertype.
 
@@ -179,13 +179,19 @@ SQLite behind a worker thread. Those are exactly the consumers the seam exists
 for, and it is the direction that cannot be widened later without breaking
 everyone.
 
-### The six contract terms
+### The nine contract terms
 
 Signatures do not tell an implementer what to guarantee. These do, and
-`storeConformance` checks every one. **Terms 1 to 5 are `BatchStore`'s and term 6
-is `TranslationStore`'s**, which is exactly the line the split was drawn on: five
-of the six were never about translation. The numbering did not shift when the seam
-split, so a comment naming "term 2" still names the same guarantee.
+`storeConformance` checks every one. **Terms 1 to 5 are `BatchStore`'s, 6 and 9 are
+`TranslationStore`'s, and 7 and 8 are `ReviewStore`'s.** The 1-to-5 line is exactly
+where the seam was split: five of the terms a translation store owes were never
+about translation.
+
+There is **one sequence over all three interfaces**, so a comment naming "term 2"
+names the same guarantee wherever it appears. The price is that a term added later
+lands out of order - `items` is term 9 because 7 and 8 were already `ReviewStore`'s
+- and it is the right price: numbers are never reused and never shift, so no
+comment in `src/` or `test/` goes quietly stale.
 
 1. **Every method is its own transaction.** The runner never needs atomicity
    spanning two calls, so no method may leave a partial write visible and none
@@ -217,8 +223,8 @@ and nothing else. Widening the base interface to make its own tests easier would
 have made the base interface a lie.
 
 Two more terms belong to `ReviewStore`, numbered on from these rather than
-restarting, because five of the six above are shared and two numbering schemes
-over one contract is how "term 2" stops meaning anything.
+restarting, because five of the terms above are shared with it and two numbering
+schemes over one contract is how "term 2" stops meaning anything.
 
 7. **`createRun` writes a run and all of its rows in one transaction, and
    refuses to overwrite a run that exists.** Review init is idempotent by
@@ -229,6 +235,18 @@ over one contract is how "term 2" stops meaning anything.
    proposes and a human adopts. A store that let a verdict reach `items` would
    turn an auditable proposal into a silent edit, which is the one property the
    review lifecycle exists to have.
+
+And one back on `TranslationStore`, added after those two and therefore numbered
+after them:
+
+9. **`items` returns every row, in row-number order, and a row with no answer has
+   a `target` of `null` and never `{}`.** It excludes nothing, `running` included,
+   which is what separates a corpus from the work queue `selectCandidates`
+   returns. The `null` half is the load-bearing one, and it is a contract term
+   because breaking it produces a wrong answer rather than a failure: an
+   unanswered row and a row answered with an empty object hash differently, so a
+   store that normalizes one to the other silently moves every review run id
+   derived from the corpus it hands back.
 
 ### The review half
 

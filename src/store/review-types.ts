@@ -179,8 +179,10 @@ export interface ReviewFailArgs {
  *    lifecycle is built to have.
  *
  * The numbering continues the translate half's rather than restarting, because
- * five of those six terms are shared and two numbering schemes over one contract
- * is how "term 2" stops meaning anything.
+ * five of the terms that apply to it are shared with this one and two numbering
+ * schemes over one contract is how "term 2" stops meaning anything. The cost is
+ * that a later term lands out of order - `TranslationStore`'s `items` is term 9,
+ * added after these two - and that is the right cost to pay.
  */
 export interface ReviewStore extends BatchStore<ReviewItem> {
   /** The run this store is scoped to. */

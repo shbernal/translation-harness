@@ -67,9 +67,11 @@ export interface AttemptPaths {
  *
  * These are the terms the runner is written against, not a description of the
  * SQLite store, and `batchConformance` in `conformance.ts` checks every one.
- * They are numbered as they are in `docs/architecture.md`, where terms 1 to 5
- * are these and term 6 belongs to `TranslationStore`, so a reference to "term 2"
- * means the same thing wherever it appears.
+ * They are numbered as they are in `docs/architecture.md`, where terms 1 to 5 are
+ * these, 6 and 9 belong to `TranslationStore` and 7 and 8 to `ReviewStore`, so a
+ * reference to "term 2" means the same thing wherever it appears. One sequence
+ * over every interface, which is why a term's number is not contiguous with its
+ * interface's others.
  *
  * 1. **Every method is its own transaction.** The runner never needs atomicity
  *    spanning two calls, so no method may leave a partial write visible and

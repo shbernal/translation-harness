@@ -310,6 +310,17 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
       return values;
     },
 
+    async items(): Promise<Item[]> {
+      // No WHERE at all, which is the point: term 9 excludes nothing, `running`
+      // included. `toItem` is what keeps the other half of the term - it maps a
+      // NULL `target_json` to `null` rather than to `{}`, and those two hash
+      // differently in a review snapshot.
+      const rows = db
+        .prepare('SELECT * FROM items ORDER BY row_number')
+        .all() as unknown as ItemRow[];
+      return rows.map(toItem);
+    },
+
     async selectCandidates(filter: CandidateFilter): Promise<Item[]> {
       // `running` is never a candidate whatever the filter says: a live pass
       // owns those rows, and `tryClaim` refuses them anyway.

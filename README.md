@@ -256,10 +256,12 @@ for (const { name, run } of storeConformance(async () => myStore()))
 
 It is exported for a reason: `tryClaim` is easy to get subtly wrong, and the
 symptom is rows translated twice under load with nothing anywhere to tell you.
-The six contract terms are on the `TranslationStore` doc comment and in
-[docs/architecture.md](docs/architecture.md).
+The contract terms are on the `TranslationStore` doc comment and in
+[docs/architecture.md](docs/architecture.md), numbered in one sequence across the
+three store interfaces: 1 to 5 generic, 6 and 9 translation, 7 and 8 review.
 
-Five of those six terms are not about translation at all. They belong to
+Five of the seven terms a translation store owes are not about translation at all.
+They belong to
 `BatchStore`, which `TranslationStore` extends, and it lives with the runner in
 the `translation-harness/batch` subpath export along with `runAgentBatch` and
 `batchConformance`: the claim, the pool, the retry ladder and the abort path,

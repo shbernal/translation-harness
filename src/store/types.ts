@@ -134,16 +134,28 @@ export interface StoreRecord {
  * which `storeConformance` runs first. Nothing about them is translation-specific,
  * which is why they are stated once for both lifecycles.
  *
- * One term is this interface's own:
+ * Two terms are this interface's own:
  *
  * 6. **`initialize` refuses to run when the registry holds a row absent from
  *    the supplied records.** That is the guard that turns silent corpus drift
  *    into an error, and it is a contract term rather than an implementation
  *    detail: without it a shrinking corpus quietly orphans finished work.
  *
- * The numbering is the one in `docs/architecture.md` and it did not shift when
- * the seam split, so a comment somewhere naming "term 2" still names the same
- * guarantee.
+ * 9. **`items` returns every row, in row-number order, and a row with no answer
+ *    has a `target` of `null` and never `{}`.** The `null` half is the
+ *    load-bearing one and it is a term rather than a detail because getting it
+ *    wrong produces a wrong answer rather than a failure: an unanswered row and
+ *    a row answered with an empty object hash differently, so a store that
+ *    normalizes one to the other silently moves every review run id derived
+ *    from the corpus it returns.
+ *
+ * **The gap from 6 to 9 is deliberate.** Terms 7 and 8 are `ReviewStore`'s, which
+ * continues this numbering rather than restarting it, so the numbers name
+ * guarantees across the whole contract and a comment reading "term 2" means one
+ * thing everywhere. A new term therefore takes the next free number, not the next
+ * number on its own interface. Nothing renumbers, ever: the numbering did not
+ * shift when the seam split either, and comments across `src/` and `test/` name
+ * terms by number.
  */
 export interface TranslationStore extends BatchStore<Item> {
   /**
@@ -154,6 +166,36 @@ export interface TranslationStore extends BatchStore<Item> {
   initialize(records: readonly StoreRecord[]): Promise<SyncResult>;
 
   counts(): Promise<Record<Status, number>>;
+
+  /**
+   * Every row of the corpus, in row-number order, whatever its status (term 9).
+   *
+   * This is the corpus, not a work queue, and the difference from
+   * `selectCandidates` is the whole reason it exists. A candidate selection
+   * excludes `running` because a live pass owns those rows; a corpus that
+   * excluded them would be a corpus with a hole in it whose shape depended on
+   * what happened to be executing.
+   *
+   * It exists for `initializeReview`, which takes its corpus as *data* rather
+   * than reading a store - that is what makes a filtered corpus a different run
+   * id instead of a run with a hole in it - and therefore leaves a host whose
+   * corpus does live in this registry with nothing to read it back with.
+   * `Item` satisfies `ReviewSourceRow` structurally, so the way in is
+   * `initializeReview(store.review, { corpus: await store.items(), ... })`.
+   * Before this existed, two hosts out of two hand-wrote the same query.
+   *
+   * Neither of the two readers already here would do. `translationsByIdentifier`
+   * drops the status and the input hash, and `selectCandidates({redo: true})`
+   * returns everything except `running` only as a consequence of what a redo
+   * means, so using it as a corpus reader would be relying on an accident.
+   *
+   * It returns an array rather than streaming, which is a deliberate limit: a
+   * whole-corpus read is a whole corpus in memory. The caller it exists for
+   * cannot avoid that anyway, because a review run id is a hash over every row
+   * in row order, so an iterator would move the materialization rather than
+   * remove it.
+   */
+  items(): Promise<Item[]>;
 
   selectCandidates(filter: CandidateFilter): Promise<Item[]>;
 

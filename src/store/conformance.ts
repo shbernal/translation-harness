@@ -255,6 +255,65 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
       }),
     },
     {
+      name: 'items returns every row in row-number order, including a claimed one (term 9)',
+      run: withStore(async (store) => {
+        // Deliberately the awkward case: one row in flight and one settled, so a
+        // store that reused its candidate selection here returns 2 rows, not 3.
+        const runId = await seeded(store, 3);
+        await store.tryClaim(2, runId);
+        await store.tryClaim(3, runId);
+        await store.commitPrecomputed({
+          rowNumber: 3,
+          outcome: 'succeeded',
+          translations: { name: 'done' },
+          warnings: [],
+          reviewReasons: [],
+          promptHash: 'p',
+        });
+        const rows = await store.items();
+        equal(rows.length, 3, 'every row comes back whatever its status');
+        equal(
+          rows.map((r) => r.rowNumber).join(','),
+          '1,2,3',
+          'and in row-number order, unconditionally',
+        );
+        equal(rows[1]?.status, 'running', 'a claimed row is included, not filtered out');
+        equal(rows[0]?.identifier, 'R-1', 'with the identifier the corpus knows it by');
+        equal(rows[0]?.inputHash, 'hash-1', 'and the input hash a snapshot needs');
+      }),
+    },
+    {
+      name: 'items reports an unanswered row as a null target, never as {} (term 9)',
+      run: withStore(async (store) => {
+        // This is the term's load-bearing half. A store that normalizes the two
+        // passes every other case here and silently moves every review run id
+        // derived from the corpus it returns.
+        const runId = await seeded(store, 2);
+        await store.tryClaim(1, runId);
+        await store.commitPrecomputed({
+          rowNumber: 1,
+          outcome: 'succeeded',
+          translations: {},
+          warnings: [],
+          reviewReasons: [],
+          promptHash: 'p',
+        });
+        const rows = await store.items();
+        const answered = rows.find((r) => r.rowNumber === 1);
+        const unanswered = rows.find((r) => r.rowNumber === 2);
+        equal(unanswered?.target, null, 'a row with no answer has a null target');
+        assert(
+          answered?.target !== null && answered?.target !== undefined,
+          'a row answered with an empty object has a target, not null',
+        );
+        equal(
+          Object.keys(answered.target).length,
+          0,
+          'and that target is empty, which is a different thing from absent',
+        );
+      }),
+    },
+    {
       name: 'failAttempt and markItemFailed record a row that ran out of attempts',
       run: withStore(async (store) => {
         const runId = await seeded(store, 1);
