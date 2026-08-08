@@ -7,9 +7,9 @@ translated corpus is rarely "did every row come back" - it is "which rows are
 wrong, and what should they say instead".
 
 This page owns the **review contract** - what a review job is, what the reviewer
-is asked, and what a well-formed answer looks like - and **opening a run**: the
-snapshot, the derived run id, and chaining. The durable half, meaning the
-tables, the version stamp and the migration, is in
+is asked, and what a well-formed answer looks like - **opening a run**: the
+snapshot, the derived run id, and chaining - and **running one**. The durable
+half, meaning the tables, the version stamp and the migration, is in
 [architecture.md](architecture.md#the-review-half).
 
 ## The one property everything else protects
@@ -333,6 +333,111 @@ no model call.
 
 Any drift makes it a normal row again. A corpus value that no longer matches the
 answer the job would give is exactly the case a reviewer should see.
+
+## Running a pass
+
+```ts
+const review = store.review(result.runId);
+const summary = await runReview(review, reviewJob, await review.selectCandidates({}), {
+  cwd: projectRoot,
+  provider: 'claude',
+  model: 'claude-sonnet-5',
+  timeoutSeconds: 300,
+  workDir,
+  maxAttempts: 3,
+  delaySeconds: 0,
+  concurrency: 4,
+  onEvent: (event) => log(event),
+});
+summary; // { pass, change_proposed, failed }
+```
+
+`runReview` is a configuration of `runAgentBatch`, exactly as `runTranslation`
+is. The pool, the atomic claim, the bounded retry ladder, the quota pause, the
+abort path, the per-attempt evidence and the final sweep are the ones already
+shipped, so **review inherits them rather than reimplementing them**. What is
+review's own is which prompt a row gets, what a valid verdict is, and what
+recording one means.
+
+Which rows to attempt is the caller's, as it is for translation:
+`selectCandidates({})` is everything still pending, `{ retryFailed: true }`
+picks up what a previous pass gave up on, `{ identifiers, limit }` is a pilot.
+
+### A run is a job; a pass is one execution of it
+
+This is the one structural thing to carry away, because every other behaviour
+below follows from it.
+
+| | opens it | closes it |
+|---|---|---|
+| the run (`review_runs`) | `initializeReview` | `runReview`, when nothing is left pending |
+| the pass (`review_passes`) | `runReview` | `runAgentBatch` |
+
+A run is created once, with a derived id and a frozen snapshot, and executed as
+many times as it takes. So the run the batch layer opens and closes is *not* the
+review run: `startRun`, `finishRun` and `tryClaim`'s run id all mean a pass. That
+is what keeps `releaseSettledRunClaims` meaningful here - a crashed pass ends,
+and the rows it was holding come back without waiting on a clock. Were the claim
+recorded against the run, it could never fire, because the run stays open across
+exactly the crash that stranded the rows.
+
+The run's status is therefore a statement about its rows, not about a live
+process:
+
+- **`completed`** - no row is still pending or running. Note what this does not
+  say: a row that exhausted its attempts is `failed`, and a run can complete
+  with failed rows in it. A failed row is a recorded answer a human can see and
+  retry; a run that one stubborn row could block forever would be a worse
+  contract than one that says what happened.
+- **`interrupted`** - the pass was aborted and rows remain.
+- **`running`** - rows remain and nobody stopped anything: a quota pause, a
+  limit, a filtered selection. It means work is left, not that something is
+  executing.
+- **`failed`** - a pass died of something that was not a bad answer.
+
+Only the first is chainable, which is [chaining's](#chaining-reviewing-what-the-last-stage-produced)
+first refusal seen from the other side.
+
+### The binding is fixed by the first pass
+
+A run records one provider, one model and one reasoning effort. Unlike a changed
+prompt or a changed corpus, a changed binding **cannot** show up as a different
+run id - a binding may legitimately arrive after the id was computed, which is
+why it is not one of the id's inputs - so this is the only place it can be
+caught, and `runReview` catches it:
+
+- an option left unset **inherits** the binding, so resuming takes `--provider`
+  and nothing else;
+- an option set to something the run is not bound to is **refused**, rather than
+  ignored in favour of the stored value. Silently running the model on record
+  while the caller believes they chose another is the failure this exists to
+  prevent, wearing a friendlier face.
+
+### Nothing on disk is an input
+
+The schema and the per-attempt evidence go under `<workDir>/review/<runId>/`,
+and a pass reads none of it back. The consistency evidence each prompt carries is
+rebuilt from the run's own snapshot, which reproduces the analysis the run id was
+derived from, hash included. Delete the run directory and the next pass composes
+the same prompts.
+
+### Trying it without a model
+
+```ts
+registerReviewMockProvider();   // registers as 'review-mock'
+```
+
+The offline reviewer runs the whole loop for free and in milliseconds, the way
+`registerMockProvider` does for translation. It registers under a name of its
+own, because the ordinary case is having both: the corpus a review reads is the
+one a translation pass wrote.
+
+What it judges is deliberately mechanical - **stray whitespace, and nothing
+else**. A mock that guessed at meaning would produce proposals a reader might
+half believe. It grades with whatever vocabularies the schema on disk allows
+rather than with the defaults, which is both what a provider honouring the
+schema would do and the only way its answers pass `validateReview` for a job
+that overrode them.
 
 ## The graded vocabularies
 

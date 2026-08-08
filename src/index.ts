@@ -108,11 +108,26 @@ export {
   reviewedFields,
   severityLevelsFor,
 } from './review/job.ts';
+// The offline reviewer. Opt in by name, like the translation mock, and never
+// registered for you.
+export {
+  invokeReviewMock,
+  REVIEW_MOCK_PROVIDER_NAME,
+  registerReviewMockProvider,
+} from './review/mock.ts';
 export {
   buildReviewPrompt,
   ROW_SNAPSHOT_MARKER,
   type RowEvidence,
 } from './review/prompt.ts';
+// Executing a review run: one pass over it, as a configuration of the same
+// batch runner the translation pass is.
+export {
+  type ReviewEvent,
+  type ReviewRunOptions,
+  type ReviewSummary,
+  runReview,
+} from './review/run.ts';
 export {
   buildReviewSchema,
   type ReviewResponseSchema,

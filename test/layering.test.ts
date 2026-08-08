@@ -62,6 +62,12 @@ type Layer =
  *   `pipeline` already takes: the lifecycle names the seam it writes through.
  *   The reverse edge is the one to watch - `store` must not import `review`,
  *   or the SQLite implementation and the lifecycle it stores become one thing.
+ *   It gained `batch` and `provider` when `runReview` landed, which makes its
+ *   list `pipeline`'s minus `contract`: the two lifecycles now differ by which
+ *   contract they configure the one runner with, and that is what the table
+ *   should say. `provider` is there for the options type a caller fills in and
+ *   for the offline reviewer to register itself; nothing here invokes a
+ *   provider, because the batch layer does that.
  *
  * `index` appears in no allow-list, which is how "nothing imports the barrel"
  * is enforced without a second rule.
@@ -73,7 +79,7 @@ const MAY_IMPORT: Record<Layer, readonly Layer[]> = {
   job: ['errors'],
   contract: ['errors', 'job', 'provider'],
   store: ['errors', 'job', 'batch'],
-  review: ['errors', 'job', 'store'],
+  review: ['errors', 'job', 'provider', 'batch', 'store'],
   pipeline: ['errors', 'job', 'provider', 'batch', 'contract', 'store'],
   index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'review', 'pipeline'],
 };

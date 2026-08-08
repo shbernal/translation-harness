@@ -27,7 +27,7 @@ Each layer may import **only** the layers listed, and nothing else inside
 | `job` | `src/job.ts` | `errors` |
 | `contract` | `src/contract/**` | `errors`, `job`, `provider` |
 | `store` | `src/store/**` | `errors`, `job`, `batch` |
-| `review` | `src/review/**` | `errors`, `job`, `store` |
+| `review` | `src/review/**` | `errors`, `job`, `provider`, `batch`, `store` |
 | `pipeline` | `src/pipeline/**` | `errors`, `job`, `provider`, `batch`, `contract`, `store` |
 | `index` | `src/index.ts` | all of them; nothing imports it |
 
@@ -54,9 +54,12 @@ A layer may always import itself. Five edges are worth stating out loud:
   compiles, and it grows one edge at a time, so each dependency the lifecycle
   takes on is a diff on this table rather than a licence granted in advance. It
   gained `store` when `initializeReview` landed, which is the direction
-  `pipeline` already takes - a lifecycle names the seam it writes through. **The
-  reverse edge is the one to watch: `store` must not import `review`**, or the
-  SQLite implementation and the lifecycle it stores stop being two things.
+  `pipeline` already takes - a lifecycle names the seam it writes through, and it
+  gained `batch` and `provider` when `runReview` did. Its list is now
+  `pipeline`'s minus `contract`, which is the table saying the true thing: the
+  two lifecycles differ by which contract they configure the one runner with.
+  **The reverse edge is the one to watch: `store` must not import `review`**, or
+  the SQLite implementation and the lifecycle it stores stop being two things.
 
 ### Why this is a test and not a paragraph
 

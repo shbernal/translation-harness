@@ -6,6 +6,26 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `runReview`: executing a review run, as a configuration of `runAgentBatch`.
+  The pool, the atomic claim, the retry ladder, the quota pause, the abort path
+  and the per-attempt evidence are the ones already shipped, so **review
+  inherits the resumability guarantees rather than reimplementing them** - the
+  in-repo implementation this replaces had no claim at all, so two processes
+  over one run would both take every pending row. **A run is a job and a pass is
+  one execution of it**: init opens the run, `runReview` opens a pass,
+  `runAgentBatch` closes the pass, and the run's status is a statement about its
+  rows rather than about a live process. The provider binding is fixed by the
+  first pass: an unset option inherits it, and one that contradicts it is
+  refused rather than ignored, because a changed binding is the one input that
+  cannot show up as a different run id. Nothing on disk is read back - each
+  prompt's consistency evidence is rebuilt from the run's own snapshot. See
+  [docs/review.md](docs/review.md#running-a-pass).
+- `registerReviewMockProvider` and `invokeReviewMock`: the offline reviewer,
+  under `review-mock`. Same argument as `registerMockProvider`, now that there
+  is a second loop to run for free - and a different default name, because the
+  ordinary case is having both. It judges stray whitespace and nothing else, and
+  grades with whatever vocabularies the schema on disk allows rather than with
+  the defaults.
 - `initializeReview`, `deriveReviewRun`, `resolveRunOutput` and
   `settledByConstruction`: opening a review run. **The run id is derived from
   every input rather than generated** - the profile, the guidance, the response
