@@ -23,22 +23,14 @@
 
 import { copyFileSync, existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
-import { SCHEMA_VERSION, tx } from './sqlite.ts';
+import { type SchemaStamp, tableExists, tx, USER_VERSION_STAMP } from './db.ts';
+import { SCHEMA_VERSION } from './sqlite.ts';
 
-/**
- * Where a version number is kept, so that two halves of one file can be
- * versioned independently.
- *
- * The translate half uses `PRAGMA user_version`, which a file has exactly one
- * of. Anything added later that a host can decline to adopt therefore cannot
- * use it, and must not: a consumer who never uses a feature must never be
- * migrated for it. Making the stamp part of the plan is what keeps that from
- * becoming a second migration mechanism.
- */
-export interface SchemaStamp {
-  read(db: DatabaseSync): number;
-  write(db: DatabaseSync, version: number): void;
-}
+// A stamp is where a version lives, and a plan says which one it uses. Both live
+// in `db.ts` with the connection helpers, because "where a version number is
+// kept in this file" is a property of the file and not of migrating it; they are
+// re-exported here because a plan is what a reader comes looking for them with.
+export { type SchemaStamp, tableStamp, USER_VERSION_STAMP } from './db.ts';
 
 /** One version of one half of the schema, and how to get there from the last. */
 export interface MigrationStep {
@@ -114,25 +106,6 @@ export interface MigrateOptions {
    * overwrite it.
    */
   backup?: string | false;
-}
-
-/** `PRAGMA user_version`: the translate half's stamp, and one per file. */
-export const USER_VERSION_STAMP: SchemaStamp = {
-  read: (db) => (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version,
-  write: (db, version) => {
-    // `PRAGMA` takes no parameters, so this is interpolated; the guard is what
-    // makes that safe rather than the fact that every caller so far is internal.
-    if (!Number.isInteger(version))
-      throw new Error(`Schema version must be an integer: ${version}`);
-    db.exec(`PRAGMA user_version = ${version}`);
-  },
-};
-
-function tableExists(db: DatabaseSync, name: string): boolean {
-  return (
-    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !==
-    undefined
-  );
 }
 
 /**
@@ -318,7 +291,15 @@ export function migrateRegistry(path: string, options: MigrateOptions = {}): Mig
           .join('-')}.bak`);
   if (backup !== null) copyFileSync(path, backup);
 
-  const db = new DatabaseSync(path);
+  // Foreign keys are **off** for the whole of the migration, which is not a
+  // shortcut: a step that has to change a table's declaration rebuilds it (make
+  // the new one, copy, drop the old, rename), and dropping a table two others
+  // reference cannot be done with the constraints live. `PRAGMA foreign_keys` is
+  // a no-op inside a transaction and `defer_foreign_keys` does not help, because
+  // the violations a drop counts are never re-checked after the rename puts the
+  // table back. So the constraints come off here and the file is checked once at
+  // the end, which is the sequence SQLite's own rebuild procedure prescribes.
+  const db = new DatabaseSync(path, { enableForeignKeyConstraints: false });
   try {
     for (const state of states) {
       for (const step of state.steps) {
@@ -327,6 +308,17 @@ export function migrateRegistry(path: string, options: MigrateOptions = {}): Mig
           state.plan.stamp.write(db, step.to);
         });
       }
+    }
+
+    const broken = db.prepare('PRAGMA foreign_key_check').all() as { table: string }[];
+    if (broken.length) {
+      const tables = [...new Set(broken.map((row) => row.table))].join(', ');
+      throw new Error(
+        `Registry at ${path} has ${broken.length} broken foreign key reference(s) after ` +
+          `migrating (${tables}). The steps have been applied and stamped, so fix the file or ` +
+          `restore it${backup === null ? '' : ` from ${backup}`}; this is a defect in a ` +
+          'migration step, not something a retry resolves.',
+      );
     }
   } finally {
     db.close();

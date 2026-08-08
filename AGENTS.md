@@ -71,10 +71,13 @@ else is in `docs/`.
   A `console.log` or a `process.on('SIGINT')` in `src/` is a defect.
 - **Each row settles in its own store transaction.** Preserve that isolation or
   resume, quota-pause and worker-pool semantics all break.
-- **Changing `SCHEMA` is three edits, not one.** Bump `SCHEMA_VERSION`, and add a
-  step to `REGISTRY_MIGRATIONS` in `src/store/migrate.ts` that takes an existing
-  file from the old version to the new one. Shipping the DDL alone means every
-  registry with real rows in it stops opening, with no way forward. See
+- **Changing a `SCHEMA` is three edits, not one.** Bump the version, and add a
+  step to the matching plan that takes an existing file from the old version to
+  the new one. Shipping the DDL alone means every registry with real rows in it
+  stops opening, with no way forward. There are two halves and they are stamped
+  and migrated separately: `SCHEMA` / `SCHEMA_VERSION` / `REGISTRY_MIGRATIONS`
+  for the translate tables, and `REVIEW_SCHEMA` / `REVIEW_SCHEMA_VERSION` /
+  `REVIEW_MIGRATIONS` in `src/store/review.ts` for the review ones. See
   [docs/architecture.md](docs/architecture.md#migration).
 - **Nothing may be awaited between a successful `tryClaim` and the two lines
   that record the row locally.** A row claimed in the registry but missing from
@@ -93,7 +96,7 @@ Read the page that owns the subject *before* changing the code, not after.
 | `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
 | `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |
 | `src/batch/**`, the pool, the claim or the retry ladder itself | [docs/batch.md](docs/batch.md) |
-| `src/store/**`, implementing a store, or the schema and its migrations | [docs/architecture.md](docs/architecture.md) |
+| `src/store/**`, implementing a store, the review half, or a schema and its migrations | [docs/architecture.md](docs/architecture.md) |
 | The layer boundaries, or adding a directory under `src/` | [docs/architecture.md](docs/architecture.md) |
 | `test/fixtures/`, or contributing one | [test/fixtures/README.md](test/fixtures/README.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 

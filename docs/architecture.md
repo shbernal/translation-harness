@@ -202,6 +202,48 @@ itself up, so `batchConformance` asks the host for exactly those two capabilitie
 and nothing else. Widening the base interface to make its own tests easier would
 have made the base interface a lie.
 
+Two more terms belong to `ReviewStore`, numbered on from these rather than
+restarting, because five of the six above are shared and two numbering schemes
+over one contract is how "term 2" stops meaning anything.
+
+7. **`createRun` writes a run and all of its rows in one transaction, and
+   refuses to overwrite a run that exists.** Review init is idempotent by
+   derivation, so a second call must return the first run rather than rebuild
+   it. A partial run is worse than no run: it reports itself as already created
+   and then reviews a corpus with a hole in it.
+8. **Nothing in the review half writes to the translate half.** The reviewer
+   proposes and a human adopts. A store that let a verdict reach `items` would
+   turn an auditable proposal into a silent edit, which is the one property the
+   review lifecycle exists to have.
+
+### The review half
+
+`sqliteStore(path).review(runId)` returns a `ReviewStore` on the same connection,
+and calling it is how a host **opts in**: the review tables are created on the
+first call and never by opening a registry, so a file belonging to someone who
+only translates has no review half at all.
+
+Two things about its shape are not arbitrary.
+
+**A review store is scoped to one run.** In the translate half `items` outlive
+runs, so a row number identifies a row. In the review half a row belongs to
+exactly one run, so a row number identifies a row only once the run is fixed.
+Binding the run at construction is what lets `rowNumber` stay the corpus row
+number - the number a human reading a workbook will recognise - instead of
+becoming a surrogate key nobody can look up. Reading a second run (which is what
+chaining does) means a second store: `.review(baseRunId).snapshot()`.
+
+**A review run is a job; a pass is an invocation.** `review_runs` is created once,
+with a derived id and a frozen snapshot, and executed as many times as it takes.
+So the run the batch layer opens and closes is not that one - it is a row in
+`review_passes`, and `startRun`, `finishRun` and `tryClaim`'s run id all mean a
+pass. Collapsing the two would cost both of the guarantees below this line:
+`releaseSettledRunClaims` could never fire, because a job stays open across
+exactly the crash that stranded its rows, and `reclaimStale` would read a job's
+creation time as evidence about a live process and interrupt a healthy one.
+`reclaimStale` therefore closes stale passes and leaves the run alone, which is
+the one place the two halves deliberately differ.
+
 ### Schema versions
 
 `applySchema` stamps `PRAGMA user_version` and opening checks it. A registry
@@ -211,6 +253,19 @@ old registry and finding out from the data is the failure it prevents.
 
 `initialize`'s guard covers corpus drift. It does not cover schema drift, which
 is what the stamp is for.
+
+**The two halves are stamped separately.** A file has exactly one
+`user_version` and the translate half has it, so the review half keeps its
+version in a `schema_versions` row instead (`tableStamp('review')` builds that
+stamp, and a third half would be another row rather than another mechanism).
+This is not a workaround for having run out of pragmas: a host who never reviews
+must never be migrated for review, and two independent stamps are what makes
+that enforceable rather than merely intended.
+
+The review half's refusal fires later than the translate one, at
+`.review(runId)` rather than at the open. That is deliberate. A file whose review
+half is old still opens, still translates and still reports; only the code that
+would misread the old review tables is stopped.
 
 ### Migration
 
@@ -246,6 +301,18 @@ registry with repeated `(row_number, attempt_number)` pairs, because the new
 schema declares that unique and the old allocation should have made it
 impossible - so a file that has them needs a human, not a retry.
 
+**Foreign keys are off for the whole of it**, and the file is checked once at the
+end with `PRAGMA foreign_key_check`. A step that has to change a table's
+declaration rather than add to it has to rebuild that table - make the new one,
+copy, drop the old, rename - and dropping a table two others reference cannot be
+done with the constraints live. Neither pragma that looks like a smaller fix
+works: `foreign_keys` is a no-op inside a transaction, and `defer_foreign_keys`
+counts the violations a drop causes and never re-checks them after the rename
+puts the table back. This is the sequence SQLite's own rebuild procedure
+prescribes, and the check at the end is what keeps it honest. A migration that
+leaves a broken reference throws, naming the backup, because that is a defect in
+a step rather than something a retry resolves.
+
 It is not concurrency-safe and is not meant to be. Migrate a registry when
 nothing is running against it, which for a file whose whole purpose is resuming
 means between passes.
@@ -265,6 +332,12 @@ Hence the default of `[REGISTRY_MIGRATIONS]` alone: a half a host has not adopte
 is not brought forward behind their back, and `isPresent` says the same thing
 from the other side, since an absent half is created at the current version by
 `applySchema` rather than migrated up from 0.
+
+`REVIEW_MIGRATIONS` is the second plan and the first proof that this is a
+mechanism rather than an intention. A host with review tables passes
+`migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] })`; a
+host without them passes nothing and is untouched. Its one step rebuilds
+`review_runs`, which is why the paragraph about foreign keys above exists.
 
 ### Where SQLite shows through
 

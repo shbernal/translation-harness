@@ -16,9 +16,11 @@ import {
   type MigrationPlan,
   migrateRegistry,
   pendingMigrations,
+  REGISTRY_MIGRATIONS,
   registryNeedsMigration,
   USER_VERSION_STAMP,
 } from '../src/store/migrate.ts';
+import { REVIEW_MIGRATIONS, REVIEW_SCHEMA_VERSION, REVIEW_STAMP } from '../src/store/review.ts';
 import { sqliteStore } from '../src/store/sqlite.ts';
 
 const SCHEMA_V0 = `
@@ -109,10 +111,30 @@ function withTempDir(fn: (dir: string) => void): void {
   }
 }
 
+/** The same, for a case that has to read the file back through the async store seam. */
+async function withTempDirAsync(fn: (dir: string) => Promise<void>): Promise<void> {
+  const dir = mkdtempSync(join(tmpdir(), 'harness-migrate-'));
+  try {
+    await fn(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function userVersion(path: string): number {
   const db = new DatabaseSync(path);
   try {
     return USER_VERSION_STAMP.read(db);
+  } finally {
+    db.close();
+  }
+}
+
+/** The review half's stamp, which lives in a table rather than in a pragma. */
+function reviewVersion(path: string): number {
+  const db = new DatabaseSync(path);
+  try {
+    return REVIEW_STAMP.read(db);
   } finally {
     db.close();
   }
@@ -421,6 +443,229 @@ describe('a second, independently versioned half of one file', () => {
       } finally {
         check.close();
       }
+    });
+  });
+});
+
+// The review half, against the schema the pilot consumer actually wrote.
+//
+// Copied rather than derived, for the reason at the top of this file: this is
+// what exists in the wild, including the two `NOT NULL` columns whose names are
+// why the run table is rebuilt rather than altered. The proof is not that the
+// step ran, it is that `.review(id)` opens the file afterwards and the verdicts
+// are still in it.
+const REVIEW_SCHEMA_V0 = `
+CREATE TABLE review_runs (
+  review_run_id TEXT PRIMARY KEY,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  status TEXT NOT NULL CHECK (status IN ('initialized','running','completed','failed','interrupted')),
+  provider TEXT,
+  model TEXT,
+  reviewer_profile TEXT,
+  reasoning_effort TEXT,
+  options_json TEXT NOT NULL,
+  prompt_hash TEXT NOT NULL,
+  response_schema_hash TEXT NOT NULL,
+  terminology_hash TEXT NOT NULL,
+  corpus_analysis_input_hash TEXT NOT NULL,
+  corpus_analysis_output_hash TEXT NOT NULL,
+  corpus_snapshot_hash TEXT NOT NULL,
+  corpus_analysis_path TEXT NOT NULL
+);
+
+CREATE TABLE review_items (
+  review_run_id TEXT NOT NULL REFERENCES review_runs(review_run_id),
+  row_number INTEGER NOT NULL,
+  identifier TEXT NOT NULL,
+  input_hash TEXT NOT NULL,
+  source_snapshot_hash TEXT NOT NULL,
+  target_snapshot_hash TEXT NOT NULL,
+  evidence_hash TEXT NOT NULL,
+  source_json TEXT NOT NULL,
+  target_json TEXT NOT NULL,
+  outcome TEXT NOT NULL DEFAULT 'pending'
+    CHECK (outcome IN ('pending','running','pass','change_proposed','failed')),
+  severity TEXT,
+  confidence TEXT,
+  proposals_json TEXT,
+  issues_json TEXT,
+  started_at TEXT,
+  finished_at TEXT,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  PRIMARY KEY (review_run_id, row_number)
+);
+
+CREATE TABLE review_attempts (
+  review_attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  review_run_id TEXT NOT NULL REFERENCES review_runs(review_run_id),
+  row_number INTEGER NOT NULL,
+  attempt_number INTEGER NOT NULL,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  duration_seconds REAL,
+  outcome TEXT,
+  exit_code INTEGER,
+  error_category TEXT,
+  error_message TEXT,
+  response_path TEXT,
+  stdout_path TEXT,
+  stderr_path TEXT,
+  UNIQUE (review_run_id, row_number, attempt_number),
+  FOREIGN KEY (review_run_id, row_number) REFERENCES review_items(review_run_id, row_number)
+);
+`;
+
+const OLD_RUN = 'b4d0f1a2c3e4567890abcdef12345678';
+
+/** A pre-library review half: one completed run with a verdict in it. */
+function writeV0ReviewHalf(path: string, duplicateIdentifier = false): void {
+  const db = new DatabaseSync(path);
+  try {
+    db.exec(REVIEW_SCHEMA_V0);
+    db.prepare(
+      `INSERT INTO review_runs VALUES (?, '2026-02-01T00:00:00Z', '2026-02-01T01:00:00Z',
+         'completed', 'codex', 'gpt-5', 'reviewer-default', 'high',
+         '{"review_fields":["name"],"base_review_run_id":null,"monolingual":false}',
+         'p-hash', 's-hash', 't-hash', 'ai-hash', 'ao-hash', 'cs-hash', 'review/corpus-terms.json')`,
+    ).run(OLD_RUN);
+    db.prepare(
+      `INSERT INTO review_items (review_run_id, row_number, identifier, input_hash,
+         source_snapshot_hash, target_snapshot_hash, evidence_hash, source_json, target_json,
+         outcome, severity, confidence, proposals_json, issues_json, attempt_count, finished_at)
+       VALUES (?, 1, 'R-1', 'h1', 'sh1', 'th1', 'eh1', '{"name":"Source 1"}', '{"name":"Cible 1"}',
+               'change_proposed', 'major', 'high', '{"name":"Cible corrigee"}', '["tone"]', 1,
+               '2026-02-01T00:30:00Z'),
+              (?, 2, ?, 'h2', 'sh2', 'th2', 'eh2', '{"name":"Source 2"}', '{"name":"Cible 2"}',
+               'pass', NULL, NULL, NULL, NULL, 1, '2026-02-01T00:31:00Z')`,
+    ).run(OLD_RUN, OLD_RUN, duplicateIdentifier ? 'R-1' : 'R-2');
+    db.prepare(
+      `INSERT INTO review_attempts (review_run_id, row_number, attempt_number, started_at, outcome)
+       VALUES (?, 1, 1, '2026-02-01T00:00:30Z', 'change_proposed')`,
+    ).run(OLD_RUN);
+  } finally {
+    db.close();
+  }
+}
+
+describe('the review half of the schema', () => {
+  test('a registry with no review tables is not migrated for review', () => {
+    withTempDir((dir) => {
+      const path = join(dir, 'translate-only.sqlite');
+      writeV0Registry(path);
+      // The whole of R3 in one assertion: a host who never reviews must never be
+      // migrated for a feature they do not use.
+      assert.deepEqual(pendingMigrations(path, { plans: [REVIEW_MIGRATIONS] }), []);
+    });
+  });
+
+  test('a fresh review half is created at the current version, not walked up from 0', () => {
+    withTempDir((dir) => {
+      const path = join(dir, 'fresh.sqlite');
+      const store = sqliteStore(path);
+      store.review('run-1');
+      store.db.close();
+
+      assert.equal(reviewVersion(path), REVIEW_SCHEMA_VERSION);
+      assert.equal(registryNeedsMigration(path, { plans: [REVIEW_MIGRATIONS] }), false);
+    });
+  });
+
+  test('the pre-library review half migrates, keeping every verdict', async () => {
+    await withTempDirAsync(async (dir) => {
+      const path = join(dir, 'old.sqlite');
+      writeV0Registry(path);
+      writeV0ReviewHalf(path);
+
+      const plans = [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS];
+      assert.deepEqual(
+        pendingMigrations(path, { plans }).map((s) => `${s.plan} ${s.from}->${s.to}`),
+        ['registry 0->1', 'review 0->1'],
+      );
+
+      const result = migrateRegistry(path, { plans });
+      assert.equal(result.kind, 'migrated');
+      assert.deepEqual(result.kind === 'migrated' && result.versions, { registry: 1, review: 1 });
+      assert.equal(reviewVersion(path), 1);
+
+      // The point of the step: the file opens through the library afterwards and
+      // the run that cost real model calls is all still in it.
+      const store = sqliteStore(path);
+      try {
+        const review = store.review(OLD_RUN);
+        const stored = await review.run();
+        assert.equal(stored?.status, 'completed');
+        assert.equal(stored?.provider, 'codex');
+        assert.equal(stored?.profile, 'reviewer-default', 'reviewer_profile becomes profile');
+        assert.deepEqual(
+          stored?.inputs,
+          {
+            prompt: 'p-hash',
+            schema: 's-hash',
+            terminology: 't-hash',
+            analysisInput: 'ai-hash',
+            analysisOutput: 'ao-hash',
+            snapshot: 'cs-hash',
+          },
+          'the hash columns land in one bag, under the names the run id derives them from',
+        );
+
+        const items = await review.snapshot();
+        assert.equal(items.length, 2);
+        assert.equal(items[0]?.outcome, 'change_proposed');
+        assert.deepEqual(items[0]?.proposals, { name: 'Cible corrigee' });
+        assert.deepEqual(items[1]?.issues, null);
+        assert.equal(
+          items[0]?.updatedAt,
+          '2026-02-01T00:30:00Z',
+          'a row with no timestamp column gains one, filled from the best time it had',
+        );
+
+        // And it is a working store, not just a readable file.
+        await review.startRun({ runId: 'pass-after-migration', model: 'test:model', options: {} });
+        assert.ok(await review.tryClaim(2, 'pass-after-migration'));
+        assert.equal((await review.counts()).running, 1);
+      } finally {
+        await store.close();
+      }
+    });
+  });
+
+  test('a review half with two rows under one identifier is refused, untouched', () => {
+    withTempDir((dir) => {
+      const path = join(dir, 'dupes.sqlite');
+      writeV0Registry(path);
+      writeV0ReviewHalf(path, true);
+
+      assert.throws(
+        () => migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] }),
+        /an identifier appears twice/,
+      );
+      // Refusals run before the copy, across every plan, so neither half moved
+      // and no backup was left behind for a migration that never happened.
+      assert.equal(userVersion(path), 0);
+      assert.equal(reviewVersion(path), 0);
+      assert.equal(existsSync(`${path}.v0-0.bak`), false);
+    });
+  });
+
+  test('using a review half this release does not write is refused by name', () => {
+    withTempDir((dir) => {
+      const path = join(dir, 'half-migrated.sqlite');
+      writeV0Registry(path);
+      writeV0ReviewHalf(path);
+      migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS], backup: false });
+
+      // The translate half is current, so the file opens and still translates.
+      // Only the code that would misread the old review tables is stopped, and
+      // the message names the plan that fixes it.
+      const store = sqliteStore(path);
+      assert.throws(
+        () => store.review(OLD_RUN),
+        /review half.*schema version 0.*REVIEW_MIGRATIONS/s,
+      );
+      store.db.close();
     });
   });
 });

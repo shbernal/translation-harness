@@ -90,8 +90,34 @@ export {
   REGISTRY_MIGRATIONS,
   registryNeedsMigration,
   type SchemaStamp,
+  tableStamp,
   USER_VERSION_STAMP,
 } from './store/migrate.ts';
+// The review half of the registry: its schema, its own version stamp, and the
+// migration plan that carries it. Opt in by calling `sqliteStore(...).review(id)`;
+// a host that never does has no review tables and is never migrated for them.
+export {
+  applyReviewSchema,
+  REVIEW_MIGRATIONS,
+  REVIEW_SCHEMA_VERSION,
+  REVIEW_STAMP,
+  type ReviewStoreOptions,
+  reviewStore,
+} from './store/review.ts';
+export type {
+  ReviewCandidateFilter,
+  ReviewCommitArgs,
+  ReviewFailArgs,
+  ReviewItem,
+  ReviewItemRecord,
+  ReviewOutcome,
+  ReviewRunRecord,
+  ReviewRunStatus,
+  ReviewStore,
+  ReviewVerdict,
+  StoredReviewRun,
+} from './store/review-types.ts';
+export { REVIEW_OUTCOMES } from './store/review-types.ts';
 export {
   applySchema,
   PRECOMPUTED_MODEL_LABEL,

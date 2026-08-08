@@ -6,6 +6,25 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `ReviewStore`, and `sqliteStore(path).review(runId)`: the durable half of a
+  linguistic review run, on the same connection as the corpus it reviews.
+  Calling `.review(...)` is how a host opts in - the tables are created there and
+  never by opening a registry, so a file belonging to someone who only translates
+  has no review half. It is a `BatchStore`, so the pool, the atomic claim and the
+  retry ladder are the ones already shipped rather than a second copy of them,
+  and `batchConformance` runs against it unchanged. Two contract terms are its
+  own: `createRun` is all-or-nothing and refuses to overwrite (7), and nothing in
+  this half writes to `items` (8). A store is scoped to one review run, because a
+  review row belongs to a run and a row number only means something once the run
+  is fixed. See [docs/architecture.md](docs/architecture.md#the-review-half).
+- `REVIEW_MIGRATIONS`, `REVIEW_SCHEMA_VERSION`, `REVIEW_STAMP`,
+  `applyReviewSchema` and `tableStamp(component)`: the review half carries its
+  own version, in a `schema_versions` row rather than in `PRAGMA user_version`,
+  which a file has only one of. Pass
+  `{ plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] }` to migrate both; the
+  default is still the registry alone, so a host who never reviews is never
+  migrated for review. `tableStamp` is the general form, so a third half is a row
+  and not another mechanism.
 - `migrateRegistry(path)`, `registryNeedsMigration(path)` and
   `pendingMigrations(path)`: an explicit, host-invoked migration path for an
   existing registry. Opening a file stamped with an unrecognised schema version
@@ -63,6 +82,12 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   switching on `event.outcome` keeps whatever exhaustiveness it had.
 - The error raised when the store refuses to open a registry now names
   `migrateRegistry` and `registryNeedsMigration`, since the library ships them.
+- `migrateRegistry` runs every step with foreign keys **off** and checks the file
+  once at the end with `PRAGMA foreign_key_check`, throwing if a reference is
+  broken. A step that has to change a table's declaration rather than add to it
+  must rebuild that table, and dropping a table others reference cannot be done
+  with the constraints live. This is what `REVIEW_MIGRATIONS`' one step needs, and
+  it is the sequence SQLite's own rebuild procedure prescribes.
 - `TranslationStore` implementations are unaffected: nothing was removed and
   nothing changed shape. `RunRecord`, `RunStatus`, `AttemptStart`,
   `StartedAttempt` and `AttemptPaths` now live in the batch layer and are

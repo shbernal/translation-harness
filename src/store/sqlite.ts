@@ -10,6 +10,9 @@ import { dirname, isAbsolute, relative } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { TransientFailure } from '../errors.ts';
 import type { Fields } from '../job.ts';
+import { closeOnce, type DbHandle, parseFields, tableExists, tx, utcnow } from './db.ts';
+import { reviewStore } from './review.ts';
+import type { ReviewStore } from './review-types.ts';
 import type {
   AttemptPaths,
   AttemptStart,
@@ -45,23 +48,9 @@ export const SCHEMA_VERSION = 1;
 /** `items.model` for a row the caller answered without a provider. */
 export const PRECOMPUTED_MODEL_LABEL = 'precomputed';
 
-export function utcnow(): string {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-}
-
-/**
- * Read a `*_json` column back into fields.
- *
- * Exported because a host running its own tables on this store's connection
- * (which is what `SqliteStore.db` is for) has to read the same columns the
- * registry writes, and reimplementing "empty means no fields" in each of them
- * is how two halves of one database start disagreeing about what a null column
- * means.
- */
-export function parseFields(json: string | null): Fields {
-  if (!json) return {};
-  return JSON.parse(json) as Fields;
-}
+// Re-exported from where they now live, so `translation-harness`'s three
+// database helpers keep the one import path a consumer already has.
+export { parseFields, tx, utcnow } from './db.ts';
 
 function parseList(json: string | null): string[] | null {
   if (!json) return null;
@@ -143,9 +132,7 @@ function openDatabase(path: string): DatabaseSync {
 
   const version = (db.prepare('PRAGMA user_version').get() as { user_version: number })
     .user_version;
-  const hasItems =
-    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'items'").get() !==
-    undefined;
+  const hasItems = tableExists(db, 'items');
 
   if (version === SCHEMA_VERSION || (version === 0 && !hasItems)) {
     applySchema(db);
@@ -159,26 +146,6 @@ function openDatabase(path: string): DatabaseSync {
       '`registryNeedsMigration(path)` before opening and you get this as a question ' +
       'rather than as a failure.',
   );
-}
-
-/**
- * Run `fn` inside a single transaction, committing on success.
- *
- * Exported for the same reason as `parseFields`: a host with its own tables on
- * this connection needs the transactions around them to nest the same way the
- * registry's do. Rolling your own `BEGIN`/`COMMIT` beside these is how a failed
- * write in one half leaves the other half committed.
- */
-export function tx<T>(db: DatabaseSync, fn: () => T): T {
-  db.exec('BEGIN');
-  try {
-    const result = fn();
-    db.exec('COMMIT');
-    return result;
-  } catch (error) {
-    db.exec('ROLLBACK');
-    throw error;
-  }
 }
 
 interface ItemRow {
@@ -238,6 +205,22 @@ export interface SqliteStore extends TranslationStore {
    * keep its tables in the same transactional world as the registry.
    */
   readonly db: DatabaseSync;
+
+  /**
+   * The review half of this registry, scoped to one review run.
+   *
+   * Calling this is how a host **opts in** to the review tables: they are
+   * created on the first call and never by opening a registry, so a consumer who
+   * only ever translates has a file the review migration will not touch
+   * (`REVIEW_MIGRATIONS.isPresent` is false for it). The run need not exist yet -
+   * this is a scope, not a lookup, and `createRun` is what creates it.
+   *
+   * The returned store shares this connection, so a review run and the corpus it
+   * reviews are in one transactional world by construction rather than by a host
+   * wiring two databases together. It also shares the close: closing either one
+   * closes the file, once.
+   */
+  review(reviewRunId: string): ReviewStore;
 }
 
 /**
@@ -252,10 +235,16 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
   const db = openDatabase(path);
   const base = options.pathBase;
   const rel = (p: string): string => (base && isAbsolute(p) ? relative(base, p) : p);
-  let closed = false;
+  // Shared with every review store handed out below, so that whichever of them
+  // is closed first closes the file, and the rest are no-ops rather than errors.
+  const handle: DbHandle = { db, closed: false };
 
   return {
     db,
+
+    review(reviewRunId: string): ReviewStore {
+      return reviewStore(handle, reviewRunId, { pathBase: base });
+    },
 
     async initialize(records: readonly StoreRecord[]): Promise<SyncResult> {
       const now = utcnow();
@@ -605,9 +594,7 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
     },
 
     async close(): Promise<void> {
-      if (closed) return;
-      closed = true;
-      db.close();
+      closeOnce(handle);
     },
   };
 }
