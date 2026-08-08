@@ -5,7 +5,7 @@ change, before you change it.
 
 | Page | Owns |
 |---|---|
-| [architecture.md](architecture.md) | The layers and the rule that binds them, the run loop's shape, the store seam and its six contract terms, schema versions, known limitations |
+| [architecture.md](architecture.md) | The layers and the rule that binds them, the run loop's shape, the store seam and its six contract terms, schema versions and migration, known limitations |
 | [providers.md](providers.md) | Subprocess invocation, the Windows paths, timeouts and the output cap, what a row costs, the measured context trims, adding a provider |
 | [batch.md](batch.md) | The domain-free runner behind every pass: `runAgentBatch`, `BatchStore`, `batchConformance`, and what it refuses to know |
 | [contract.md](contract.md) | The response schema, prompt assembly, the two hashes, the per-row extras and salt hooks |

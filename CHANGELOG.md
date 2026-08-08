@@ -6,6 +6,22 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `migrateRegistry(path)`, `registryNeedsMigration(path)` and
+  `pendingMigrations(path)`: an explicit, host-invoked migration path for an
+  existing registry. Opening a file stamped with an unrecognised schema version
+  still refuses; this is the other half of that refusal, which until now every
+  host had to write for itself. It takes a **path, not a store**, because the
+  thing that fails is the open. Nothing migrates automatically. Refusals run
+  before any copy or write, the write-ahead log is folded in before the backup is
+  taken, and each step applies in its own transaction and stamps its own version.
+  The one shipped step brings a pre-0.1.0 registry to version 1. See
+  [docs/architecture.md](docs/architecture.md#migration).
+- `MigrationPlan`, `MigrationStep`, `SchemaStamp`, `USER_VERSION_STAMP` and
+  `REGISTRY_MIGRATIONS`: a migration ladder is data, and where its version is
+  kept is part of it. A file has exactly one `PRAGMA user_version`, so anything
+  added later that a host can decline to adopt has to be stamped elsewhere, and
+  `migrateRegistry` migrates only the plans it is given - by default just the
+  translation registry.
 - `translation-harness/batch`: the runner, extracted from `runTranslation` and now
   domain-free. `runAgentBatch` is the pool, the atomic claim, the bounded retry
   ladder, the quota pause, the abort path, the per-attempt evidence and the final
@@ -45,6 +61,8 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   caller's `commit` may return. The type exported at the package root is
   `RunEvent<Outcome>` and is identical to what 0.1.0 published, so a consumer
   switching on `event.outcome` keeps whatever exhaustiveness it had.
+- The error raised when the store refuses to open a registry now names
+  `migrateRegistry` and `registryNeedsMigration`, since the library ships them.
 - `TranslationStore` implementations are unaffected: nothing was removed and
   nothing changed shape. `RunRecord`, `RunStatus`, `AttemptStart`,
   `StartedAttempt` and `AttemptPaths` now live in the batch layer and are

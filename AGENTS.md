@@ -71,6 +71,11 @@ else is in `docs/`.
   A `console.log` or a `process.on('SIGINT')` in `src/` is a defect.
 - **Each row settles in its own store transaction.** Preserve that isolation or
   resume, quota-pause and worker-pool semantics all break.
+- **Changing `SCHEMA` is three edits, not one.** Bump `SCHEMA_VERSION`, and add a
+  step to `REGISTRY_MIGRATIONS` in `src/store/migrate.ts` that takes an existing
+  file from the old version to the new one. Shipping the DDL alone means every
+  registry with real rows in it stops opening, with no way forward. See
+  [docs/architecture.md](docs/architecture.md#migration).
 - **Nothing may be awaited between a successful `tryClaim` and the two lines
   that record the row locally.** A row claimed in the registry but missing from
   the run's own list is never released, sits in `running`, and is invisible to
@@ -88,7 +93,7 @@ Read the page that owns the subject *before* changing the code, not after.
 | `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
 | `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |
 | `src/batch/**`, the pool, the claim or the retry ladder itself | [docs/batch.md](docs/batch.md) |
-| `src/store/**`, or implementing a store | [docs/architecture.md](docs/architecture.md) |
+| `src/store/**`, implementing a store, or the schema and its migrations | [docs/architecture.md](docs/architecture.md) |
 | The layer boundaries, or adding a directory under `src/` | [docs/architecture.md](docs/architecture.md) |
 | `test/fixtures/`, or contributing one | [test/fixtures/README.md](test/fixtures/README.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 

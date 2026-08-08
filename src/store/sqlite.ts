@@ -33,9 +33,12 @@ import { STATUSES } from './types.ts';
  *
  * The library owns the schema, so from the first release onward a schema change
  * meets registries with real rows in them. `initialize`'s guard covers corpus
- * drift, not schema drift. Refusing to open is a perfectly good migration story
- * for a young package; running new code against an old registry and finding out
- * from the data is not.
+ * drift, not schema drift; the stamp is what covers schema drift.
+ *
+ * Refusing to open an unrecognised stamp is the default and stays the default -
+ * running new code against an old registry and finding out from the data is the
+ * failure it prevents. `migrateRegistry` in `migrate.ts` is the other half, and
+ * it is invoked by the host rather than by the open.
  */
 export const SCHEMA_VERSION = 1;
 
@@ -152,7 +155,9 @@ function openDatabase(path: string): DatabaseSync {
   throw new Error(
     `Registry at ${path} has schema version ${version}, but this version of ` +
       `translation-harness writes version ${SCHEMA_VERSION}. Refusing to open it: ` +
-      'migrate the registry, or point at a new one.',
+      'run `migrateRegistry(path)` first, or point at a new one. Ask ' +
+      '`registryNeedsMigration(path)` before opening and you get this as a question ' +
+      'rather than as a failure.',
   );
 }
 

@@ -206,11 +206,65 @@ have made the base interface a lie.
 
 `applySchema` stamps `PRAGMA user_version` and opening checks it. A registry
 written by a different schema version is refused, loudly, naming both versions.
-Refusing to open is a fine migration story for a young package; running new code
-against an old registry and finding out from the data is not.
+That refusal is the default and stays the default: running new code against an
+old registry and finding out from the data is the failure it prevents.
 
 `initialize`'s guard covers corpus drift. It does not cover schema drift, which
 is what the stamp is for.
+
+### Migration
+
+`migrateRegistry(path)` is the other half of that refusal, and everything about
+its shape follows from one fact: **the thing that fails is the open.**
+
+- **It takes a path, not a store.** There is no store to hand in, because
+  obtaining one is exactly what did not work.
+- **It is never automatic.** An open that quietly migrated would turn a mistyped
+  path into a rewritten database, and would hide the one moment where a backup is
+  obviously worth taking inside a constructor.
+- **Ask before you open.** `registryNeedsMigration(path)` answers the question
+  the open would otherwise answer by throwing, so a host's error can name the
+  migration and the command that runs it. `pendingMigrations(path)` returns the
+  same answer with the steps in it, for a host that wants to say what is about to
+  happen to a file.
+- **It is synchronous**, unlike `TranslationStore`. That interface is async so a
+  registry can live somewhere other than a local file; this is about a local
+  file. A store backed by anything else migrates with its own host's tooling.
+
+The order inside it is the interesting part. Every step's `refuse` hook runs
+first, across every plan, so a file that cannot be migrated is left exactly as it
+was and no copy is taken for a migration that never happens. Then the
+write-ahead log is folded back into the file, so the copy taken next is the whole
+registry rather than a prefix of it. Then each step applies inside its own
+transaction and stamps its own version, so an interruption leaves the file at a
+version some step produced rather than at a version nothing describes.
+
+**Refuse rather than guess** is a first-class part of a step, not a convention. A
+step that lets its DDL fail instead reports SQLite's message, which names neither
+what the constraint meant nor what to do about it. The one shipped step refuses a
+registry with repeated `(row_number, attempt_number)` pairs, because the new
+schema declares that unique and the old allocation should have made it
+impossible - so a file that has them needs a human, not a retry.
+
+It is not concurrency-safe and is not meant to be. Migrate a registry when
+nothing is running against it, which for a file whose whole purpose is resuming
+means between passes.
+
+#### A plan is data
+
+A `MigrationPlan` is a label, a target version, a `SchemaStamp`, an `isPresent`
+probe and an ordered list of steps. `REGISTRY_MIGRATIONS` is the only one the
+library ships and the only one `migrateRegistry` uses by default.
+
+The stamp is part of the plan rather than fixed at `PRAGMA user_version`, and
+that is what keeps a second independently versioned half of the file from
+becoming a second migration mechanism. A file has exactly one `user_version`, so
+anything added later that a host can decline to adopt cannot use it - and must
+not, because a consumer who never uses a feature must never be migrated for it.
+Hence the default of `[REGISTRY_MIGRATIONS]` alone: a half a host has not adopted
+is not brought forward behind their back, and `isPresent` says the same thing
+from the other side, since an absent half is created at the current version by
+`applySchema` rather than migrated up from 0.
 
 ### Where SQLite shows through
 

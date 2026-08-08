@@ -186,6 +186,27 @@ the `translation-harness/batch` subpath export along with `runAgentBatch` and
 with nothing in them that knows what a row means. Most people never need it, and
 [docs/batch.md](docs/batch.md) is there for the ones who do.
 
+## Upgrading a registry
+
+The SQLite store stamps its schema version and **refuses to open a file it does
+not recognise**, rather than running against it and letting you find out from the
+data. When that happens, migrate the file explicitly:
+
+```ts
+import { migrateRegistry, registryNeedsMigration, sqliteStore } from 'translation-harness';
+
+if (registryNeedsMigration(path)) migrateRegistry(path);  // keeps a .bak beside it
+const store = sqliteStore(path);
+```
+
+Ask before you open, so your own error can name the migration instead of
+surfacing as a complaint about two version numbers. Nothing migrates
+automatically: an open that quietly rewrote the file would turn a mistyped path
+into a rewritten database. Additive changes only, a copy taken first, and a step
+that cannot be applied safely **refuses rather than guesses**. Migrate between
+passes, not during one. See
+[docs/architecture.md](docs/architecture.md#migration).
+
 ## License
 
 The code is MIT. See [LICENSE](LICENSE).

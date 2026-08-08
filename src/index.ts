@@ -77,6 +77,21 @@ export {
   sampleRecords,
   storeConformance,
 } from './store/conformance.ts';
+// Migration: explicit, host-invoked, and taking a path because the thing that
+// fails is the open.
+export {
+  type MigrateOptions,
+  type MigrationPlan,
+  type MigrationResult,
+  type MigrationStep,
+  type MigrationStepInfo,
+  migrateRegistry,
+  pendingMigrations,
+  REGISTRY_MIGRATIONS,
+  registryNeedsMigration,
+  type SchemaStamp,
+  USER_VERSION_STAMP,
+} from './store/migrate.ts';
 export {
   applySchema,
   PRECOMPUTED_MODEL_LABEL,
