@@ -69,6 +69,7 @@ export {
   resolveProfile,
 } from './provider/profiles.ts';
 export type { ProviderName, ProviderOptions } from './provider/types.ts';
+export { resolveRunOutput } from './review/chain.ts';
 // The review contract: what a review job is, what the reviewer is asked, and
 // what a well-formed answer looks like. The graded vocabularies are closed
 // lists, and the reason is measured rather than stylistic - see
@@ -82,6 +83,20 @@ export {
   type RecordedEvidence,
   recordedEvidence,
 } from './review/consistency.ts';
+// Opening a review run. The id is derived from every input rather than
+// generated, which is what makes init idempotent and makes a changed input a
+// different run instead of a polluted one.
+export {
+  deriveReviewRun,
+  initializeReview,
+  type ReviewDerivation,
+  type ReviewDerivationInputs,
+  type ReviewInitResult,
+  type ReviewRunInputs,
+  type ReviewSourceRow,
+  type ReviewStoreProvider,
+  settledByConstruction,
+} from './review/init.ts';
 export { extraInputsDigest } from './review/inputs.ts';
 export {
   confidenceLevelsFor,

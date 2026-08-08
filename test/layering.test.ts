@@ -58,6 +58,10 @@ type Layer =
  *   runner would be the beginning of a third runner nobody decided to write.
  *   Its list is deliberately narrow and grows one edge at a time, so each new
  *   dependency is a diff on this literal rather than a licence granted early.
+ *   It gained `store` when `initializeReview` landed, which is the direction
+ *   `pipeline` already takes: the lifecycle names the seam it writes through.
+ *   The reverse edge is the one to watch - `store` must not import `review`,
+ *   or the SQLite implementation and the lifecycle it stores become one thing.
  *
  * `index` appears in no allow-list, which is how "nothing imports the barrel"
  * is enforced without a second rule.
@@ -69,7 +73,7 @@ const MAY_IMPORT: Record<Layer, readonly Layer[]> = {
   job: ['errors'],
   contract: ['errors', 'job', 'provider'],
   store: ['errors', 'job', 'batch'],
-  review: ['errors', 'job'],
+  review: ['errors', 'job', 'store'],
   pipeline: ['errors', 'job', 'provider', 'batch', 'contract', 'store'],
   index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'review', 'pipeline'],
 };
@@ -319,6 +323,10 @@ describe('the layer map', () => {
     assert.ok(
       !MAY_IMPORT.review.includes('pipeline'),
       'the two lifecycles are siblings over batch, not one built on the other',
+    );
+    assert.ok(
+      !MAY_IMPORT.store.includes('review'),
+      'the review lifecycle names the store seam; the store must not name the lifecycle',
     );
     for (const [layer, allowed] of Object.entries(MAY_IMPORT)) {
       if (layer === 'index') continue;

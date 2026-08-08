@@ -6,6 +6,21 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `initializeReview`, `deriveReviewRun`, `resolveRunOutput` and
+  `settledByConstruction`: opening a review run. **The run id is derived from
+  every input rather than generated** - the profile, the guidance, the response
+  schema, the terminology, the consistency analysis, every row of the corpus,
+  whether the source is shown, and any base run - so init is idempotent and a
+  changed input is provably a different run instead of a polluted one. It takes
+  a `ReviewStoreProvider` and not a store, because the id the store would be
+  scoped to is the thing init computes, and because the same provider is how it
+  reaches a base run when chaining; it closes nothing it opens. The corpus
+  arrives as data, and a host cannot filter its way around the accepted-corpus
+  rule, because the snapshot hash covers every row it was given. Chaining ships
+  with it (`baseRunId`), refusing a base that has not completed or does not
+  cover every row. Nothing is written to disk: a run reproduces its own
+  consistency analysis from its own snapshot. See
+  [docs/review.md](docs/review.md#opening-a-run).
 - `buildConsistency`, `promptEvidence` and `recordedEvidence`: every source
   string the corpus renders more than one way, per field, attached to the rows it
   affects. The library derives this rather than taking it from the host because

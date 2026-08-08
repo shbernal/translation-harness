@@ -6,9 +6,10 @@ provider layer, and it exists because the interesting question about a
 translated corpus is rarely "did every row come back" - it is "which rows are
 wrong, and what should they say instead".
 
-This page owns the **review contract**: what a review job is, what the reviewer
-is asked, and what a well-formed answer looks like. The durable half - the
-tables, the version stamp and the migration - is in
+This page owns the **review contract** - what a review job is, what the reviewer
+is asked, and what a well-formed answer looks like - and **opening a run**: the
+snapshot, the derived run id, and chaining. The durable half, meaning the
+tables, the version stamp and the migration, is in
 [architecture.md](architecture.md#the-review-half).
 
 ## The one property everything else protects
@@ -195,6 +196,143 @@ an `undefined` value silently, which would make `{ termbase: undefined }` digest
 identically to `{}` - the one collision this whole mechanism exists to prevent.
 For the same reason `{ termbase: '' }` is not the same as no key at all: a host
 that declares an input and has nothing in it this time has still declared it.
+
+## Opening a run
+
+```ts
+const result = await initializeReview(store.review, {
+  job: reviewJob,
+  corpus: rows,                 // every row, as `ReviewSourceRow`
+  profile: 'sonnet-5',
+  provider: 'claude',
+  model: 'claude-sonnet-5',
+});
+result.runId;    // 32 hex characters, derived
+result.created;  // false on the second call with the same inputs
+```
+
+The first argument is not a store, it is **the function that opens one**.
+`sqliteStore(path).review` is exactly that function. Init cannot be handed a
+store because the run id the store would be scoped to is the thing init
+computes, and the same provider is how init reaches a *base* run when chaining.
+
+**No store opened by init is closed by init.** The shipped provider hands back
+stores over one shared connection, so closing the base run's store would close
+the caller's registry underneath them.
+
+The corpus arrives as data, the same choice `TranslationStore.initialize` makes
+with `SourceRecord`. `Item` from the translate store satisfies `ReviewSourceRow`
+structurally, so a host reading its own registry hands the rows straight over.
+
+### The run id is derived, not generated
+
+```
+sha(profile | promptHash | schemaHash | terminologyHash |
+    analysisInputHash | analysisOutputHash | snapshotHash |
+    mono|bi | baseRunId) + extraInputsDigest
+```
+
+truncated to 32 hex characters. Two properties come out of that, and everything
+else on this page is in service of them:
+
+- **Init is idempotent.** The second call on unchanged inputs finds the run and
+  reports `created: false`. Nothing is rebuilt and nothing is re-reviewed.
+- **A changed input is a different run, never a polluted one.** There is no
+  state in which a run's answers were produced under rules the run does not
+  record.
+
+Three things are deliberately *not* inputs, and each is checkable:
+
+| Not an input | Why |
+|---|---|
+| the order the caller iterated the corpus | rows are sorted by row number before anything is hashed |
+| the provider and the model | a binding can legitimately arrive later (`bindProvider`); an input that can arrive after the id was computed cannot be one of its inputs |
+| `allowPartial` | a row with no answer already snapshots differently from the same row once it has one |
+
+The **profile** is an input, because it is chosen when the run is opened and it
+names the configuration the run means.
+
+`deriveReviewRun` is init with the writing taken out: pure, no store, no clock,
+no filesystem. Use it to answer "what id would these inputs produce" before
+opening anything.
+
+### The accepted-corpus rule
+
+`initializeReview` refuses unless every supplied row is `succeeded`. Reviewing a
+half-translated corpus produces proposals about text nobody has accepted, and
+there is no later moment at which that becomes visible, so the refusal is a
+contract term rather than a convenience. `allowPartial` overrides it and is
+recorded on the run, which makes a partial run visibly partial forever.
+
+A host cannot get around it by filtering, and not because filtering is
+forbidden: **the snapshot hash covers every row init was given**, so a corpus
+with rows held back derives a different id. It is a different run, not a run
+with a hole in it.
+
+### The snapshot is immutable, and the interface is how that is enforced
+
+`ReviewStore` has no method that rewrites a snapshotted source or target. That
+is not an omission: `target_snapshot_hash`, `evidence_hash` and the whole-corpus
+`snapshot` hash are all taken over those values, and the run id is taken over
+those hashes. Rewriting the text without recomputing the id leaves a run whose
+id no longer identifies what was reviewed - and nothing anywhere says so.
+
+The pressure to do it is real and looks reasonable. A corpus normalized after
+the fact leaves every review workbook rendering the old forms, so the obvious
+fix is to backfill the snapshot too. The library's answer is that a corrected
+corpus is a **new run**: re-initialize, get a different id because the rows
+differ, and keep the old run as the record of what was actually reviewed. If you
+reach for the `DatabaseSync` escape hatch to do it the other way, you are
+choosing to make the run id a lie about that run.
+
+### Nothing is written to disk
+
+Init returns the consistency analysis rather than writing it anywhere. A host
+that wants the bytes has `analysis.text`, and nothing in the library needs them,
+because a run reproduces its own analysis from its own snapshot:
+`buildConsistency(job, await store.snapshot())` is the same object, hash
+included.
+
+## Chaining: reviewing what the last stage produced
+
+`baseRunId` takes a prior **completed** run's resolved output as this run's
+target, so stage 2 reviews stage 1's corrections rather than the live corpus.
+The source stays the corpus source; only the target moves.
+
+```ts
+const stage2 = await initializeReview(store.review, {
+  job: reviewJob,
+  corpus: rows,
+  baseRunId: stage1.runId,
+});
+```
+
+`resolveRunOutput(snapshot)` is what "the output of run 1" means, and it ships
+because two callers need it and must agree: a chained run snapshots it, and an
+exporter renders it. A `change_proposed` row contributes its non-null proposals,
+field by field; every other row resolves to its snapshot unchanged. Nothing is
+read from the live corpus, which is what lets a run resolve to the same thing in
+a year.
+
+Two refusals, both about the same thing:
+
+- **A base that has not completed** has rows nobody answered, so chaining would
+  freeze a half-finished opinion into the next stage and never mention it again.
+- **A base that does not cover a row** would leave that row reviewing the live
+  corpus while its neighbours review stage 1, which is a corpus that never
+  existed at any single moment.
+
+## Rows the job answers itself
+
+`settledByConstruction` is `job.precomputed` one level up: a row whose value is
+fixed rather than translated has nothing for a reviewer to judge, and asking one
+to judge a fixed string once per row is as many chances to word it differently
+as there are rows. Such rows are snapshotted like every other row - the run
+still covers the whole corpus - and seeded `pass` with no proposal, so they cost
+no model call.
+
+Any drift makes it a normal row again. A corpus value that no longer matches the
+answer the job would give is exactly the case a reviewer should see.
 
 ## The graded vocabularies
 
