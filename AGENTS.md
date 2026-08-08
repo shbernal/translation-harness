@@ -11,6 +11,12 @@ translation workers over a large structured corpus. One row is one subprocess
 answering a JSON contract; a store tracks every row, so a pass resumes cleanly
 after an interruption, pauses on quota, and retries on transient failure.
 
+There are **two lifecycles over one runner**: translation produces a rendering,
+review judges an existing one and proposes rather than mutates. They share
+`src/batch/`, the store contract and the provider layer, and they are siblings -
+neither imports the other. A review run's id is derived from every input it was
+given, which is the property most of `src/review/` exists to protect.
+
 The library does not translate and it does not know where rows come from. The
 host supplies the records, the prompt template, the validators and the language
 pair. What is published is the *mechanism*; the judgement stays with the caller.

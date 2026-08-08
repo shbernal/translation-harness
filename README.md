@@ -11,6 +11,11 @@ It does not translate, and it does not know where your rows come from. You bring
 the corpus, the prompt, the language pair and the validators. The harness is the
 part that is the same whatever you are translating.
 
+There is a [second lifecycle](#the-second-lifecycle-review) over the same runner
+and the same registry: a review pass that judges what came back instead of
+producing it, proposes rather than mutates, and derives its run id from every
+input it was given.
+
 **Status: pre-release.** The API is not stable and nothing is published yet.
 
 ## Requirements
@@ -92,15 +97,14 @@ node examples/review/cli.ts review --limit 3
 node examples/review/cli.ts review              # resume the rest
 ```
 
-[`examples/review/cli.ts`](examples/review/cli.ts) drives the review half the
-same way, offline, over eight rows. **It is an example rather than an
-interface:** the package ships no binary and none of its flags are API. It is
-there because the two properties worth knowing about a review run are only
-convincing at a prompt. A run id is *derived* from every input rather than
-generated, so running `init` twice is the same run while `--mono` or `--profile`
-is a different one; and a run is a job that a pass executes, so `--limit 3`
-stops at three rows and the next `review` takes the rest. Nothing about which
-run is current is stored anywhere, because a derived id means it need not be.
+[`examples/review/cli.ts`](examples/review/cli.ts) drives [the review
+half](#the-second-lifecycle-review) the same way, offline, over eight rows.
+**It is an example rather than an interface:** the package ships no binary and
+none of its flags are API. It is there because the two properties worth knowing
+about a review run are only convincing at a prompt - `init` twice reporting the
+same run id, and a pass stopped at three rows being finished by the next one.
+Nothing about which run is current is stored anywhere, because a derived id
+means it need not be.
 
 ## What you get that a for-loop over `spawn` does not
 
@@ -172,13 +176,65 @@ way for a small absolute change. Override it per job:
 thresholds: { minLengthRatio: 0.2, maxLengthRatio: 4 }
 ```
 
+## The second lifecycle: review
+
+A review pass judges an existing rendering instead of producing one, and it is
+the other half of the problem. Getting ten thousand rows translated is the half
+a batch runner solves; deciding which of them came back wrong, and what they
+should say instead, is the half that takes a person's time.
+
+It is not the `review_required` status above wearing a bigger name. That is a
+guardrail flagging one row of a translation pass. This is a run of its own, with
+its own snapshot, its own tables and its own model calls, over a corpus every
+row of which has already been accepted.
+
+```ts
+const { runId } = await initializeReview(store.review, {
+  job: reviewJob,        // carries the TranslationJob whose output it judges
+  corpus: rows,          // every row of the accepted corpus
+  profile: 'sonnet-5',
+});
+
+const review = store.review(runId);
+await runReview(review, reviewJob, await review.selectCandidates({}), options);
+
+const { resolved, counts, warnings } = resolveDecisions(await review.snapshot(), decisions);
+```
+
+Three properties, and everything else about it follows from them:
+
+- **The reviewer proposes; it never mutates.** Nothing in the review half writes
+  to the corpus. A proposal is stored beside the value it is about, and adopting
+  it is a separate, human, auditable step: per field, keep what is there, take
+  the proposal, or write your own. `resolveDecisions` turns those choices into
+  the text the corpus should read, and warns rather than refuses on the cells
+  somebody filled in wrong.
+- **A run id is derived from every input, not generated** - the profile, the
+  guidance, the response schema, the terminology, the consistency analysis and
+  every row of the snapshot. Opening a run twice is therefore the same run, and
+  a changed input is provably a *different* run rather than a polluted one.
+- **A run is a job; a pass is one execution of it.** The corpus is snapshotted
+  when the run opens, so the corpus can move underneath a run and the run still
+  says what it said, and a pass that stopped is picked up by the next one - on
+  the same pool, the same atomic claim and the same retry ladder the translation
+  half runs on, because it is the same runner.
+
+Runs also chain: a second run takes a completed run's resolved output as its
+target instead of the live corpus, so stage two reviews what stage one fixed.
+[docs/review.md](docs/review.md) is the whole of it, and
+`registerReviewMockProvider()` runs the loop offline the way the translation
+mock does.
+
 ## What it deliberately does not do
 
 No ingestion, no export, no rendering, no opinion about your source format. It
 will not read your spreadsheet, will not write your deliverable, and does not
-know what a column is. The linguistic review lifecycle, terminology and glossary
-management, and language-specific typography are all out of scope for now, with
-hooks (`job.normalize`, `job.promptExtras`, `job.promptSalt`) where they attach.
+know what a column is. Review ships as the mechanism only - the run, the prompt,
+the verdicts and the decision model - while the workbook you send a linguist and
+the diff they read stay yours. Terminology and glossary management and
+language-specific typography remain out of scope, with hooks (`job.normalize`,
+`job.promptExtras`, `job.promptSalt`, `ReviewJob.extraInputs`) where they
+attach.
 
 ## Implementing your own store
 

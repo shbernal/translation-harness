@@ -6,11 +6,13 @@ provider layer, and it exists because the interesting question about a
 translated corpus is rarely "did every row come back" - it is "which rows are
 wrong, and what should they say instead".
 
-This page owns the **review contract** - what a review job is, what the reviewer
-is asked, and what a well-formed answer looks like - **opening a run**: the
-snapshot, the derived run id, and chaining - and **running one**. The durable
-half, meaning the tables, the version stamp and the migration, is in
-[architecture.md](architecture.md#the-review-half).
+This page owns the whole lifecycle: the **contract** (what a review job is, what
+the reviewer is asked, what a well-formed answer looks like), **opening a run**
+(the snapshot, the derived run id, chaining), **running a pass**, and **the
+three-way decision** that turns proposals into text. The durable half, meaning
+the tables, the version stamp and the migration, is in
+[architecture.md](architecture.md#the-review-half); the runner underneath a pass
+is in [batch.md](batch.md).
 
 ## The one property everything else protects
 

@@ -74,6 +74,14 @@ silently change meaning the moment somebody raised the pool.
 A precomputed row skips the delay entirely: the delay paces a provider, and none
 was called.
 
+**It is charged once per row, which is invisible until the rows are cheap.** A
+pass that waits on a real agent hides it inside the latency it is pacing; the
+same delay over a mock provider is the entire run time, and 2 seconds across
+2,125 rows at concurrency 4 is 18 minutes of a pass that makes no network calls
+at all. A whole-corpus offline pass that looks hung is usually this. Set
+`delaySeconds: 0` when there is no conversation to pace - neither it nor
+`concurrency` is an input to any hash, so the run is the same run either way.
+
 ## Retries and quota
 
 A `TransientFailure` retries up to `maxAttempts`, with
