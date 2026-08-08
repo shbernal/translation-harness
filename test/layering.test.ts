@@ -21,7 +21,16 @@ import { fileURLToPath } from 'node:url';
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
-type Layer = 'errors' | 'provider' | 'batch' | 'job' | 'contract' | 'store' | 'pipeline' | 'index';
+type Layer =
+  | 'errors'
+  | 'provider'
+  | 'batch'
+  | 'job'
+  | 'contract'
+  | 'store'
+  | 'review'
+  | 'pipeline'
+  | 'index';
 
 /**
  * The rule, as data. Each layer may import the layers listed and nothing else
@@ -44,6 +53,11 @@ type Layer = 'errors' | 'provider' | 'batch' | 'job' | 'contract' | 'store' | 'p
  *   translation is defined, and `translation-harness/batch` promises a runner
  *   that has never heard of it. `store` importing `batch` is the allowed
  *   direction of that edge: `TranslationStore` extends `BatchStore`.
+ * - `review` may **not** import `pipeline`. Both are lifecycles built on
+ *   `batch`, and they are siblings: a review that reached into the translation
+ *   runner would be the beginning of a third runner nobody decided to write.
+ *   Its list is deliberately narrow and grows one edge at a time, so each new
+ *   dependency is a diff on this literal rather than a licence granted early.
  *
  * `index` appears in no allow-list, which is how "nothing imports the barrel"
  * is enforced without a second rule.
@@ -55,8 +69,9 @@ const MAY_IMPORT: Record<Layer, readonly Layer[]> = {
   job: ['errors'],
   contract: ['errors', 'job', 'provider'],
   store: ['errors', 'job', 'batch'],
+  review: ['errors', 'job'],
   pipeline: ['errors', 'job', 'provider', 'batch', 'contract', 'store'],
-  index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'pipeline'],
+  index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'review', 'pipeline'],
 };
 
 /** Single-file layers, keyed by their path relative to `src/`. */
@@ -72,6 +87,7 @@ const DIR_LAYERS: ReadonlyMap<string, Layer> = new Map([
   ['batch', 'batch'],
   ['contract', 'contract'],
   ['store', 'store'],
+  ['review', 'review'],
   ['pipeline', 'pipeline'],
 ]);
 
@@ -282,6 +298,7 @@ describe('the layer map', () => {
     assert.equal(layerOf(join('batch', 'run.ts')), 'batch');
     assert.equal(layerOf(join('contract', 'mock.ts')), 'contract');
     assert.equal(layerOf(join('store', 'sqlite.ts')), 'store');
+    assert.equal(layerOf(join('review', 'prompt.ts')), 'review');
     assert.equal(layerOf(join('pipeline', 'run.ts')), 'pipeline');
   });
 
@@ -299,6 +316,10 @@ describe('the layer map', () => {
         `the batch runner must not know about ${domain}: that is what its subpath export promises`,
       );
     }
+    assert.ok(
+      !MAY_IMPORT.review.includes('pipeline'),
+      'the two lifecycles are siblings over batch, not one built on the other',
+    );
     for (const [layer, allowed] of Object.entries(MAY_IMPORT)) {
       if (layer === 'index') continue;
       assert.ok(!allowed.includes('index'), `${layer} must not import the barrel`);

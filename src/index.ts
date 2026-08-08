@@ -69,6 +69,31 @@ export {
   resolveProfile,
 } from './provider/profiles.ts';
 export type { ProviderName, ProviderOptions } from './provider/types.ts';
+// The review contract: what a review job is, what the reviewer is asked, and
+// what a well-formed answer looks like. The graded vocabularies are closed
+// lists, and the reason is measured rather than stylistic - see
+// [docs/review.md](docs/review.md#the-graded-vocabularies).
+export {
+  confidenceLevelsFor,
+  DEFAULT_CONFIDENCE_LEVELS,
+  DEFAULT_SEVERITY_LEVELS,
+  normalizerFor,
+  type ReviewJob,
+  type ReviewRow,
+  reviewedFields,
+  severityLevelsFor,
+} from './review/job.ts';
+export {
+  buildReviewPrompt,
+  ROW_SNAPSHOT_MARKER,
+  type RowEvidence,
+} from './review/prompt.ts';
+export {
+  buildReviewSchema,
+  type ReviewResponseSchema,
+  writeReviewSchema,
+} from './review/schema.ts';
+export { type ReviewedResponse, validateReview } from './review/validate.ts';
 // The registry: the interface, the one implementation, and the suite that makes
 // the interface implementable.
 export {

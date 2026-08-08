@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "identifier": {
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "change_proposed"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "minor",
+        "moderate",
+        "major",
+        null
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        null
+      ]
+    },
+    "proposals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ]
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "identifier",
+    "verdict",
+    "severity",
+    "confidence",
+    "proposals",
+    "issues"
+  ]
+}

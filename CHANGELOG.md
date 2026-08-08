@@ -6,6 +6,24 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- The review contract: `ReviewJob`, `buildReviewPrompt`, `buildReviewSchema`,
+  `writeReviewSchema` and `validateReview`, in a new `review` layer. A review job
+  **carries** the `TranslationJob` it judges rather than restating it, so its
+  fields, its language pair and its `normalize` hook cannot drift from the pass
+  that produced the corpus. `showSource: false` is the monolingual pass, which is
+  a different job rather than a flag on one. Both optional prompt blocks -
+  terminology and consistency evidence - vanish cleanly, so a job that has
+  neither composes the prompt it would have composed without them. See
+  [docs/review.md](docs/review.md).
+- `DEFAULT_SEVERITY_LEVELS` and `DEFAULT_CONFIDENCE_LEVELS`, overridable per job.
+  **The graded fields are closed lists and the reason is measured**: left
+  unconstrained over 2,125 rows, one model answered with four words for three
+  levels (`minor` 413, `major` 25, `medium` 7, `moderate` 2), so anything sorting
+  by severity saw one level split across two names. `moderate` grades a defect,
+  `medium` grades a belief, and each scale keeps the one that belongs to it. The
+  lists reach the model as schema enums and are re-checked in `validateReview`,
+  because a provider that does not enforce the schema is a provider and not a
+  bug. See [docs/review.md](docs/review.md#the-graded-vocabularies).
 - `ReviewStore`, and `sqliteStore(path).review(runId)`: the durable half of a
   linguistic review run, on the same connection as the corpus it reviews.
   Calling `.review(...)` is how a host opts in - the tables are created there and

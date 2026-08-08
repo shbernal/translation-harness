@@ -1,0 +1,15 @@
+REVIEWER GUIDANCE
+
+Review these fields translated from English into French: name, description.
+
+TERMINOLOGY:
+policy -> politique
+access control -> controle d acces
+
+CONSISTENCY EVIDENCE (other target renderings of the same source in this corpus):
+{"name":["Politique de controle d'acces","Politique de gestion des acces"]}
+
+Reply with EXACTLY ONE JSON object matching the review output schema and nothing else.
+
+ROW SNAPSHOT:
+{"identifier":"AC-1","fields":{"name":{"source":"Access Control Policy","current":"Politique de controle d'acces"},"description":{"source":"The organization develops [Assignment: organization-defined] procedures.","current":"L organisation elabore des procedures [Assignment: organization-defined]."}}}

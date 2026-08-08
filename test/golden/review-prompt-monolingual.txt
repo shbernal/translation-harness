@@ -1,0 +1,8 @@
+COHERENCE GUIDANCE
+
+Review the coherence and correctness of these French fields on their own terms: name, description.
+
+Reply with EXACTLY ONE JSON object matching the review output schema and nothing else.
+
+ROW SNAPSHOT:
+{"identifier":"AC-1","fields":{"name":{"current":"Politique de controle d'acces"},"description":{"current":"L organisation elabore des procedures [Assignment: organization-defined]."}}}

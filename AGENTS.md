@@ -94,6 +94,7 @@ Read the page that owns the subject *before* changing the code, not after.
 | `src/provider/**`, or anything about what a row costs | [docs/providers.md](docs/providers.md) |
 | `src/contract/prompt.ts`, `src/contract/schema.ts`, `src/job.ts` | [docs/contract.md](docs/contract.md) |
 | `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
+| `src/review/**`, the reviewer prompt or schema, the severity and confidence scales | [docs/review.md](docs/review.md) |
 | `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |
 | `src/batch/**`, the pool, the claim or the retry ladder itself | [docs/batch.md](docs/batch.md) |
 | `src/store/**`, implementing a store, the review half, or a schema and its migrations | [docs/architecture.md](docs/architecture.md) |
