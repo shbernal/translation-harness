@@ -179,6 +179,13 @@ symptom is rows translated twice under load with nothing anywhere to tell you.
 The six contract terms are on the `TranslationStore` doc comment and in
 [docs/architecture.md](docs/architecture.md).
 
+Five of those six terms are not about translation at all. They belong to
+`BatchStore`, which `TranslationStore` extends, and it lives with the runner in
+the `translation-harness/batch` subpath export along with `runAgentBatch` and
+`batchConformance`: the claim, the pool, the retry ladder and the abort path,
+with nothing in them that knows what a row means. Most people never need it, and
+[docs/batch.md](docs/batch.md) is there for the ones who do.
+
 ## License
 
 The code is MIT. See [LICENSE](LICENSE).

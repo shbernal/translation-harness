@@ -23,13 +23,14 @@ Each layer may import **only** the layers listed, and nothing else inside
 |---|---|---|
 | `errors` | `src/errors.ts` | nothing |
 | `provider` | `src/provider/**` | `errors` |
+| `batch` | `src/batch/**` | `errors`, `provider` |
 | `job` | `src/job.ts` | `errors` |
 | `contract` | `src/contract/**` | `errors`, `job`, `provider` |
-| `store` | `src/store/**` | `errors`, `job` |
-| `pipeline` | `src/pipeline/**` | `errors`, `job`, `provider`, `contract`, `store` |
+| `store` | `src/store/**` | `errors`, `job`, `batch` |
+| `pipeline` | `src/pipeline/**` | `errors`, `job`, `provider`, `batch`, `contract`, `store` |
 | `index` | `src/index.ts` | all of them; nothing imports it |
 
-A layer may always import itself. Three edges are worth stating out loud:
+A layer may always import itself. Four edges are worth stating out loud:
 
 - **`contract` may import `provider`.** The offline mock registers itself and
   needs the invoker types. It lives in `contract/` because it parses the prompt
@@ -40,6 +41,11 @@ A layer may always import itself. Three edges are worth stating out loud:
 - **`provider` may not import `job`.** This is the edge most likely to be
   crossed by accident, because `job.ts` sits at the root next to `errors.ts` and
   looks equally neutral. It is not: it is where translation is defined.
+- **`batch` may not import `job`, `contract` or `store`.** The batch runner is
+  the pool, the claim, the retry ladder and the abort path, and it must not know
+  what a row means; that is what `translation-harness/batch` promises. The edge
+  it does have runs the other way: **`store` imports `batch`**, because
+  `TranslationStore` extends `BatchStore`.
 
 ### Why this is a test and not a paragraph
 
@@ -49,18 +55,25 @@ not resolve, and on any file belonging to no declared layer at all. That last
 assertion is what stops somebody adding `src/util/` and silently opting it out.
 
 It matters to you, not just to us, for one concrete reason: it is why
-`translation-harness/providers` can be **depended on** as a domain-free layer
-rather than merely described as one. If a future release quietly imported
-translation types into the provider layer, that subpath would stop being what it
-claims, and CI would not notice without this. A provider contributed from
-outside is held to the same rule by the same check, rather than by an opinion in
-review.
+`translation-harness/providers` and `translation-harness/batch` can be
+**depended on** as domain-free layers rather than merely described as ones. If a
+future release quietly imported translation types into either, that subpath would
+stop being what it claims, and CI would not notice without this. A provider
+contributed from outside is held to the same rule by the same check, rather than
+by an opinion in review.
 
 The rule was worth mechanizing because review demonstrably does not enforce it:
 the private codebase this was extracted from broke exactly this boundary once,
 silently, with one attentive author reading it daily.
 
 ## The run loop
+
+The loop itself is `runAgentBatch` in `src/batch/`, and it knows nothing about
+translation: four callbacks supply the prompt, the answer that is acceptable, what
+committing one means and what failing one means. `runTranslation` is that function
+plus those four callbacks, and its exported signature has not changed.
+`docs/batch.md` covers the layer on its own terms. What follows is the loop as a
+translation pass experiences it.
 
 ```
 selectCandidates  ->  for each row, one worker:
@@ -129,6 +142,22 @@ because it is the primary key everything else hangs off.
 `sqliteStore`. The interface exists so the runner never names SQLite, not so
 that we maintain a Postgres backend.
 
+It is two interfaces now, split where the runner was generalized.
+**`BatchStore`** is what a claim-and-retry pool needs - `tryClaim`, `unclaim`,
+`reclaimStale`, `releaseSettledRunClaims`, the run and attempt bookkeeping, and
+`close` - and it knows a row only as a row number and an identifier.
+**`TranslationStore extends BatchStore<Item>`** adds the translation lifecycle:
+`initialize`, `counts`, `selectCandidates`, `commitSuccess`, `commitPrecomputed`,
+`markItemFailed`, `translationsByIdentifier`. Nothing was removed and nothing
+changed shape, so a 0.1 implementation is still a valid one; it simply gained a
+supertype.
+
+The split is not tidiness. It is what lets a second lifecycle *inherit* the
+guarantees below rather than re-earn them, and `batchConformance` is the
+executable form of that: `storeConformance` runs the whole of it before its own
+cases, so a translation store demonstrates the generic terms rather than
+asserting them.
+
 It is **asynchronous** although `sqliteStore` is not. A synchronous interface is
 the honest shape of `node:sqlite` and cheaper to write, but it can only ever be
 implemented by a synchronous store: no Postgres, no network-backed registry, no
@@ -139,7 +168,10 @@ everyone.
 ### The six contract terms
 
 Signatures do not tell an implementer what to guarantee. These do, and
-`storeConformance` checks every one.
+`storeConformance` checks every one. **Terms 1 to 5 are `BatchStore`'s and term 6
+is `TranslationStore`'s**, which is exactly the line the split was drawn on: five
+of the six were never about translation. The numbering did not shift when the seam
+split, so a comment naming "term 2" still names the same guarantee.
 
 1. **Every method is its own transaction.** The runner never needs atomicity
    spanning two calls, so no method may leave a partial write visible and none
@@ -149,10 +181,10 @@ Signatures do not tell an implementer what to guarantee. These do, and
    Everything else rests on this, and it is the one term a lazy implementation
    breaks invisibly: the symptom is two workers translating the same row and the
    second silently overwriting the first.
-3. **Store failures are not translation failures.** A rejected store call is a
-   fatal run error. Never raise `TransientFailure` from a store method, or the
-   runner will retry the row, and a row does not become translatable because you
-   tried it again after the disk filled up.
+3. **Store failures are not row failures.** A rejected store call is a fatal run
+   error. Never raise `TransientFailure` from a store method, or the runner will
+   retry the row, and a row does not become translatable because you tried it
+   again after the disk filled up.
 4. **`recordInternalError` may itself fail,** since the store is very often what
    broke. The runner swallows its rejection so it cannot mask the original
    error, which means an implementation must not rely on it having succeeded.
@@ -163,6 +195,12 @@ Signatures do not tell an implementer what to guarantee. These do, and
 6. **`initialize` refuses to run when the registry holds a row absent from the
    supplied records.** This is the guard that turns silent corpus drift into an
    error. Without it a shrinking corpus quietly orphans finished work.
+
+`BatchStore` deliberately has no way to create a row and no way to count a claim,
+because both are lifecycle knowledge. That makes the generic suite unable to set
+itself up, so `batchConformance` asks the host for exactly those two capabilities
+and nothing else. Widening the base interface to make its own tests easier would
+have made the base interface a lie.
 
 ### Schema versions
 

@@ -7,6 +7,13 @@ read_when: changing src/pipeline/**, or reasoning about resume, concurrency or q
 `runTranslation(store, job, candidates, options)`. It returns a summary and
 throws only on a non-transient error.
 
+Everything on this page except the guardrails and the prompt is `runAgentBatch`'s
+doing: the loop lives in `src/batch/` and knows nothing about translation, and
+`runTranslation` is that function plus the four callbacks that make it a
+translation pass. Read [batch.md](batch.md) if you are changing the loop itself,
+or if you want to drive an agent over rows that are not translations. This page
+describes what a translation pass does, which is what almost everybody wants.
+
 ## Resume is the whole design
 
 Every row settles in its own store transaction. There is no batch commit, no

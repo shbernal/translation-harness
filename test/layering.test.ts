@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
-type Layer = 'errors' | 'provider' | 'job' | 'contract' | 'store' | 'pipeline' | 'index';
+type Layer = 'errors' | 'provider' | 'batch' | 'job' | 'contract' | 'store' | 'pipeline' | 'index';
 
 /**
  * The rule, as data. Each layer may import the layers listed and nothing else
@@ -40,6 +40,10 @@ type Layer = 'errors' | 'provider' | 'job' | 'contract' | 'store' | 'pipeline' |
  * - `provider` may **not** import `job`. `job.ts` sits at the root next to
  *   `errors.ts` and looks equally neutral. It is not: it is where translation
  *   is defined, and the subpath export promises a translation-free provider.
+ * - `batch` may **not** import `job`, `contract` or `store`. Those are where
+ *   translation is defined, and `translation-harness/batch` promises a runner
+ *   that has never heard of it. `store` importing `batch` is the allowed
+ *   direction of that edge: `TranslationStore` extends `BatchStore`.
  *
  * `index` appears in no allow-list, which is how "nothing imports the barrel"
  * is enforced without a second rule.
@@ -47,11 +51,12 @@ type Layer = 'errors' | 'provider' | 'job' | 'contract' | 'store' | 'pipeline' |
 const MAY_IMPORT: Record<Layer, readonly Layer[]> = {
   errors: [],
   provider: ['errors'],
+  batch: ['errors', 'provider'],
   job: ['errors'],
   contract: ['errors', 'job', 'provider'],
-  store: ['errors', 'job'],
-  pipeline: ['errors', 'job', 'provider', 'contract', 'store'],
-  index: ['errors', 'job', 'provider', 'contract', 'store', 'pipeline'],
+  store: ['errors', 'job', 'batch'],
+  pipeline: ['errors', 'job', 'provider', 'batch', 'contract', 'store'],
+  index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'pipeline'],
 };
 
 /** Single-file layers, keyed by their path relative to `src/`. */
@@ -64,6 +69,7 @@ const FILE_LAYERS: ReadonlyMap<string, Layer> = new Map([
 /** Directory layers, keyed by their first path segment under `src/`. */
 const DIR_LAYERS: ReadonlyMap<string, Layer> = new Map([
   ['provider', 'provider'],
+  ['batch', 'batch'],
   ['contract', 'contract'],
   ['store', 'store'],
   ['pipeline', 'pipeline'],
@@ -273,6 +279,7 @@ describe('the layer map', () => {
     assert.equal(layerOf('job.ts'), 'job');
     assert.equal(layerOf('index.ts'), 'index');
     assert.equal(layerOf(join('provider', 'run.ts')), 'provider');
+    assert.equal(layerOf(join('batch', 'run.ts')), 'batch');
     assert.equal(layerOf(join('contract', 'mock.ts')), 'contract');
     assert.equal(layerOf(join('store', 'sqlite.ts')), 'store');
     assert.equal(layerOf(join('pipeline', 'run.ts')), 'pipeline');
@@ -283,9 +290,15 @@ describe('the layer map', () => {
     assert.equal(layerOf('stray.ts'), null);
   });
 
-  it('forbids the three edges the boundary exists to forbid', () => {
+  it('forbids the edges the boundary exists to forbid', () => {
     assert.ok(!MAY_IMPORT.provider.includes('job'), 'provider must not know about translation');
     assert.ok(!MAY_IMPORT.store.includes('provider'), 'the store records names, not providers');
+    for (const domain of ['job', 'contract', 'store'] as const) {
+      assert.ok(
+        !MAY_IMPORT.batch.includes(domain),
+        `the batch runner must not know about ${domain}: that is what its subpath export promises`,
+      );
+    }
     for (const [layer, allowed] of Object.entries(MAY_IMPORT)) {
       if (layer === 'index') continue;
       assert.ok(!allowed.includes('index'), `${layer} must not import the barrel`);

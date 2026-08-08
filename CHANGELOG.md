@@ -6,6 +6,18 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `translation-harness/batch`: the runner, extracted from `runTranslation` and now
+  domain-free. `runAgentBatch` is the pool, the atomic claim, the bounded retry
+  ladder, the quota pause, the abort path, the per-attempt evidence and the final
+  sweep; what a row means arrives as four callbacks. `BatchStore` is what it needs
+  from a registry, `batchConformance` is the executable form of that contract, and
+  `test/layering.test.ts` fails the build if anything under `src/batch/` imports
+  `job`, `contract` or `store`. See [docs/batch.md](docs/batch.md).
+- `BatchStore`, and `TranslationStore extends BatchStore<Item>`. Five of the six
+  store contract terms turn out not to be about translation, so they moved down
+  with the runner and are published as `BatchStore`'s own prose; term 6
+  (`initialize` refusing a shrinking corpus) stays. The numbering did not shift.
+
 - `TranslationStore.releaseSettledRunClaims()`: release rows still claimed by a
   run that has already ended, without waiting out `reclaimStale`'s cutoff. A
   cutoff exists to distinguish a dead process from a slow one; a run recorded as
@@ -16,6 +28,27 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
   This adds a method to the store interface. An existing implementation of
   `TranslationStore` will need it; `storeConformance` has a case for it.
+
+### Changed
+
+- `runTranslation` is now a configuration of `runAgentBatch`. Its exported name,
+  signature, summary, events and on-disk evidence are unchanged, and the v0.1
+  acceptance gate - a byte comparison of the prompt hash and eight item columns
+  over two corpora - was re-run against it.
+- `storeConformance` runs the whole of `batchConformance` before its own cases, so
+  the generic terms are demonstrated by the store under test rather than asserted.
+  The case list is therefore different, and one case was renamed
+  (`recordInternalError marks the rows it is given failed, and no others`) because
+  releasing the row is now checked generically and only where it lands is the
+  translation store's business.
+- `RunEvent` is one union across lifecycles, generic in the outcome labels a
+  caller's `commit` may return. The type exported at the package root is
+  `RunEvent<Outcome>` and is identical to what 0.1.0 published, so a consumer
+  switching on `event.outcome` keeps whatever exhaustiveness it had.
+- `TranslationStore` implementations are unaffected: nothing was removed and
+  nothing changed shape. `RunRecord`, `RunStatus`, `AttemptStart`,
+  `StartedAttempt` and `AttemptPaths` now live in the batch layer and are
+  re-exported from the root, where they have always been.
 
 ## 0.1.0
 
@@ -60,5 +93,6 @@ will be listed here with the reason.
   repository, because this package does not pass `--skip-git-repo-check`. Point
   it at your project root. Anything else fails every row of a pass on row one.
 - Rows claimed by a run already recorded `interrupted` still wait out
-  `reclaimStale`'s full cutoff. See
-  [docs/architecture.md](docs/architecture.md#known-limitation-stale-claims-from-interrupted-runs).
+  `reclaimStale`'s full cutoff. Addressed after this release by
+  `releaseSettledRunClaims`, above; see
+  [docs/architecture.md](docs/architecture.md#releasing-stale-claims-without-waiting-on-a-clock).

@@ -6,6 +6,12 @@
 // load with nothing anywhere to tell them. Every term in the doc comment on
 // `TranslationStore` has a case here.
 //
+// Terms 1 to 5 belong to `BatchStore`, so their cases do too: this suite runs the
+// whole of `batchConformance` before its own, against a harness built out of
+// `initialize` and `counts`. A translation store therefore *proves* the generic
+// terms rather than asserting them, and a review store proving the same suite
+// starts from guarantees that are already demonstrated.
+//
 // It returns named async assertions rather than calling a test framework,
 // because a library has no business choosing a consumer's test runner. Drive
 // them from whatever you use:
@@ -19,13 +25,11 @@
 // is the SQLite regression net too, rather than extra surface maintained for a
 // hypothetical third party.
 
+import { batchConformance, type ConformanceCase } from '../batch/conformance.ts';
 import { TransientFailure } from '../errors.ts';
 import type { StoreRecord, TranslationStore } from './types.ts';
 
-export interface ConformanceCase {
-  name: string;
-  run: () => Promise<void>;
-}
+export type { ConformanceCase } from '../batch/conformance.ts';
 
 /** A fresh, empty store. Called once per case; each case owns its store. */
 export type StoreFactory = () => Promise<TranslationStore>;
@@ -72,6 +76,19 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
   };
 
   return [
+    // The generic terms, checked against this store. `BatchStore` has no way to
+    // create a row or to count a claim, deliberately, so the two capabilities the
+    // suite cannot supply for itself come from the lifecycle: `initialize` and
+    // `counts`.
+    ...batchConformance(async (rowCount) => {
+      const store = await make();
+      await store.initialize(sampleRecords(rowCount));
+      return {
+        store,
+        rows: Array.from({ length: rowCount }, (_, i) => i + 1),
+        claimed: async () => (await store.counts()).running,
+      };
+    }),
     {
       name: 'initialize inserts every record and reports the count',
       run: withStore(async (store) => {
@@ -176,117 +193,6 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
       }),
     },
     {
-      name: 'tryClaim gives a row to exactly one of many concurrent callers (term 2)',
-      run: withStore(async (store) => {
-        // The invariant everything else rests on. A store that gets this wrong
-        // translates the same row twice and silently keeps the second answer.
-        await seeded(store, 1);
-        const results = await Promise.all(
-          Array.from({ length: 16 }, (_, i) => store.tryClaim(1, `run-${i}`)),
-        );
-        const winners = results.filter((r) => r !== null);
-        equal(winners.length, 1, 'exactly one caller may win the row');
-      }),
-    },
-    {
-      name: 'tryClaim returns null rather than throwing when the row is taken',
-      run: withStore(async (store) => {
-        // Losing the race is an ordinary outcome under concurrency. A throw
-        // would make the common case look exceptional.
-        await seeded(store, 1);
-        assert(await store.tryClaim(1, 'a'), 'first claim wins');
-        equal(await store.tryClaim(1, 'b'), null, 'second claim returns null');
-      }),
-    },
-    {
-      name: 'unclaim releases claimed rows and ignores rows it does not hold',
-      run: withStore(async (store) => {
-        await seeded(store, 3);
-        await store.tryClaim(1, 'run-1');
-        await store.tryClaim(2, 'run-1');
-        const released = await store.unclaim([1, 2, 3]);
-        equal(released, 2, 'only the two running rows are released');
-        equal((await store.counts()).pending, 3, 'all three are pending again');
-        equal(await store.unclaim([]), 0, 'an empty sweep is a no-op');
-      }),
-    },
-    {
-      name: 'reclaimStale leaves no row running, even if unclaim was never called',
-      run: withStore(async (store) => {
-        // The safety net for a process that was killed rather than stopped.
-        await seeded(store, 2);
-        await store.tryClaim(1, 'run-1');
-        await store.tryClaim(2, 'run-1');
-        equal((await store.counts()).running, 2, 'both rows are claimed');
-        const reclaimed = await store.reclaimStale(0);
-        equal(reclaimed, 2, 'both are reclaimed at a zero cutoff');
-        equal((await store.counts()).running, 0, 'nothing may be left running');
-      }),
-    },
-    {
-      name: 'releaseSettledRunClaims frees rows held by an ended run and spares a live one',
-      run: withStore(async (store) => {
-        // The point is the *absence* of a clock: nothing here waits, and the two
-        // runs differ only in whether they have been finished.
-        await store.initialize(sampleRecords(3));
-        await store.startRun({ runId: 'dead', model: 'test:model', options: {} });
-        await store.startRun({ runId: 'live', model: 'test:model', options: {} });
-        await store.tryClaim(1, 'dead');
-        await store.tryClaim(2, 'dead');
-        await store.tryClaim(3, 'live');
-
-        equal(await store.releaseSettledRunClaims(), 0, 'nothing is released while both runs run');
-        equal((await store.counts()).running, 3, 'all three rows are still claimed');
-
-        await store.finishRun('dead', 'interrupted');
-        equal(await store.releaseSettledRunClaims(), 2, 'the ended run gives up both its rows');
-        const counts = await store.counts();
-        equal(counts.running, 1, 'the live run keeps its row');
-        equal(counts.pending, 2, 'the released rows are selectable again');
-        equal(await store.releaseSettledRunClaims(), 0, 'a second sweep is a no-op');
-      }),
-    },
-    {
-      name: 'startAttempt allocates consecutive numbers per row',
-      run: withStore(async (store) => {
-        const runId = await seeded(store, 2);
-        const a = await store.startAttempt({ runId, rowNumber: 1 });
-        const b = await store.startAttempt({ runId, rowNumber: 1 });
-        const c = await store.startAttempt({ runId, rowNumber: 2 });
-        equal(a.attemptNumber, 1, 'first attempt on a row');
-        equal(b.attemptNumber, 2, 'second attempt on the same row');
-        equal(c.attemptNumber, 1, 'attempt numbers are per row, not global');
-        assert(a.attemptId !== b.attemptId, 'attempt ids must be distinct');
-      }),
-    },
-    {
-      name: 'startAttempt never issues a duplicate number under concurrency',
-      run: withStore(async (store) => {
-        // The allocation has to be inside the write. Read-then-insert is safe
-        // only while nothing can interleave, which is exactly what an async
-        // interface stops guaranteeing.
-        const runId = await seeded(store, 1);
-        const started = await Promise.all(
-          Array.from({ length: 8 }, () => store.startAttempt({ runId, rowNumber: 1 })),
-        );
-        const numbers = started.map((s) => s.attemptNumber).sort((x, y) => x - y);
-        equal(new Set(numbers).size, numbers.length, 'attempt numbers must be unique per row');
-        equal(numbers.join(','), '1,2,3,4,5,6,7,8', 'and consecutive from one');
-      }),
-    },
-    {
-      name: 'setAttemptPaths accepts absolute paths without complaint (term 5)',
-      run: withStore(async (store) => {
-        const runId = await seeded(store, 1);
-        const { attemptId } = await store.startAttempt({ runId, rowNumber: 1 });
-        await store.setAttemptPaths(attemptId, {
-          responsePath: '/tmp/harness/00001_R-1_a01.response.json',
-          stdoutPath: '/tmp/harness/00001_R-1_a01.stdout.log',
-          stderrPath: '/tmp/harness/00001_R-1_a01.stderr.log',
-        });
-      }),
-    },
-    {
       name: 'commitSuccess settles the row and makes the translation readable',
       run: withStore(async (store) => {
         const runId = await seeded(store, 2);
@@ -368,10 +274,10 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
       }),
     },
     {
-      name: 'recordInternalError fails only the rows it is given',
+      name: 'recordInternalError marks the rows it is given failed, and no others',
       run: withStore(async (store) => {
-        // "Every running row" would also fail the rows a concurrent process
-        // happens to hold, which is how one broken run takes down another.
+        // `batchConformance` checks that it releases only those rows. What is
+        // this lifecycle's is where they land: `failed`, not back in `pending`.
         const runId = await seeded(store, 3);
         await store.tryClaim(1, runId);
         await store.tryClaim(2, 'some-other-run');
@@ -380,31 +286,6 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
         equal(counts.failed, 1, 'only the given row failed');
         equal(counts.running, 1, 'the other run keeps its row');
       }),
-    },
-    {
-      name: 'recordInternalError with no rows touches no item',
-      run: withStore(async (store) => {
-        const runId = await seeded(store, 2);
-        await store.tryClaim(1, runId);
-        await store.recordInternalError(runId, new Error('boom'), []);
-        equal((await store.counts()).failed, 0, 'an empty set updates nothing');
-      }),
-    },
-    {
-      name: 'a run can be started and finished',
-      run: withStore(async (store) => {
-        await store.initialize(sampleRecords(1));
-        await store.startRun({ runId: 'r1', model: 'test:model', options: { concurrency: 2 } });
-        await store.finishRun('r1', 'completed');
-      }),
-    },
-    {
-      name: 'close is idempotent',
-      run: async (): Promise<void> => {
-        const store = await make();
-        await store.close();
-        await store.close();
-      },
     },
   ];
 }

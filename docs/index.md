@@ -7,6 +7,7 @@ change, before you change it.
 |---|---|
 | [architecture.md](architecture.md) | The layers and the rule that binds them, the run loop's shape, the store seam and its six contract terms, schema versions, known limitations |
 | [providers.md](providers.md) | Subprocess invocation, the Windows paths, timeouts and the output cap, what a row costs, the measured context trims, adding a provider |
+| [batch.md](batch.md) | The domain-free runner behind every pass: `runAgentBatch`, `BatchStore`, `batchConformance`, and what it refuses to know |
 | [contract.md](contract.md) | The response schema, prompt assembly, the two hashes, the per-row extras and salt hooks |
 | [guardrails.md](guardrails.md) | The hard and soft split, the length-ratio defaults and their real scope, writing a validator |
 | [pipeline.md](pipeline.md) | Resume, claiming, concurrency, the three stop reasons, quota, events, evidence |

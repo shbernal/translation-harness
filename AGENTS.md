@@ -59,9 +59,9 @@ else is in `docs/`.
   exclude it on purpose.
 - **No em dashes (U+2014)** in source, docs or prompts. Use a hyphen or
   restructure. `scripts/check-no-emdash.ts` enforces it.
-- **Imports only ever point down the layer stack.** `provider/` knows nothing
-  about translation, `store/` knows nothing about providers, and nothing imports
-  `index.ts`. The exact table is in
+- **Imports only ever point down the layer stack.** `provider/` and `batch/` know
+  nothing about translation, `store/` knows nothing about providers, and nothing
+  imports `index.ts`. The exact table is in
   [docs/architecture.md](docs/architecture.md) and it is enforced by
   `test/layering.test.ts`, which fails on any edge the table does not allow and
   on any file that maps to no layer at all. If you need a new edge, change the
@@ -87,6 +87,7 @@ Read the page that owns the subject *before* changing the code, not after.
 | `src/contract/prompt.ts`, `src/contract/schema.ts`, `src/job.ts` | [docs/contract.md](docs/contract.md) |
 | `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
 | `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |
+| `src/batch/**`, the pool, the claim or the retry ladder itself | [docs/batch.md](docs/batch.md) |
 | `src/store/**`, or implementing a store | [docs/architecture.md](docs/architecture.md) |
 | The layer boundaries, or adding a directory under `src/` | [docs/architecture.md](docs/architecture.md) |
 | `test/fixtures/`, or contributing one | [test/fixtures/README.md](test/fixtures/README.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
