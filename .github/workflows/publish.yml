@@ -1,0 +1,85 @@
+name: Publish
+
+# Publishing is driven by a GitHub release, not by a push or a tag on its own.
+# Cutting a release is a deliberate act with a human behind it, which is the
+# right shape for the one operation in this repo that cannot be undone: npm
+# forbids republishing a version, so a bad publish is a new version rather than
+# a fix.
+#
+# There is no NPM_TOKEN. The package is claimed on npm through a trusted
+# publisher bound to this repository and to this workflow file, so npm accepts
+# the short-lived OIDC token GitHub mints for the job and nothing long-lived is
+# stored anywhere. Two consequences worth knowing before editing this file:
+# renaming it breaks publishing until the trusted publisher on npmjs.com is
+# updated to match, and `id-token: write` below is what mints the token, so
+# dropping it turns every publish into an authentication failure.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Mints the OIDC token npm exchanges for publish rights. Provenance is
+      # attested from the same token, so the published version carries a
+      # verifiable link back to this commit and this workflow.
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out translation-harness
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 11.11.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm 11.5.1 or newer. The runner's bundled npm
+      # already clears that today, but it is the version this job authenticates
+      # with, so it is pinned rather than inherited.
+      - name: Pin npm
+        run: npm install --global npm@11.13.0
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The release tag is the claim; package.json is what actually gets
+      # published. A mismatch means the tag points at one version and the
+      # registry receives another, which is unfixable after the fact.
+      - name: Check the release tag matches package.json
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          package_version="$(node --print 'require("./package.json").version')"
+          tag_version="${RELEASE_TAG#v}"
+          if [ "$package_version" != "$tag_version" ]; then
+            echo "Release tag is $RELEASE_TAG (version $tag_version)," >&2
+            echo "but package.json is at $package_version." >&2
+            exit 1
+          fi
+          echo "Publishing $package_version."
+
+      # A release can be cut from any commit, not only one the CI matrix has
+      # already been green on, so the suite runs again here rather than being
+      # assumed. Ubuntu only: the Windows process-control paths are what the
+      # two-platform matrix in ci.yml exists for, and re-proving them is that
+      # workflow's job, not this one's.
+      - name: Check
+        run: pnpm check
+
+      # `prepare` cleans and rebuilds `dist/` before npm packs, so the tarball
+      # cannot carry a stale build. Publishing through npm rather than pnpm
+      # because the OIDC exchange lives in the npm CLI.
+      - name: Publish to npm
+        run: npm publish --access public
