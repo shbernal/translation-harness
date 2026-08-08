@@ -96,6 +96,25 @@ else is in `docs/`.
   every selection filter. There is a comment at the call site saying so, because
   those two lines look exactly like something worth tidying.
 
+## If a run ever hits a quota wall, capture it
+
+`isQuotaError` decides a refusal is a quota refusal by matching `usage limit`,
+`rate limit` and `session limit` against the provider's text, and those three
+strings are ours rather than any provider's: no run has hit a quota wall since
+they were written. The four cases under `test/fixtures/recorded/` cover success,
+a fenced envelope and an untrusted-cwd refusal. A quota refusal is not among
+them, and forcing one is not worth what it costs.
+
+So this is opportunistic and standing: **the next time any run hits a quota
+wall, capture the raw stderr, stdout and exit code before doing anything else**,
+including before retrying. The moment does not come back. Scrub it before it
+lands, because scrubbing happens at capture time and is not re-runnable, then
+add it as a directory under `test/fixtures/recorded/` with the `meta.json` the
+others carry. Nothing needs a test change: `recordedCases()` discovers the
+directory, and the secret scan in `test/provider-recorded.test.ts` is what
+catches an unscrubbed capture. That turns `isQuotaError` from a guess into a
+measured claim. See [docs/providers.md](docs/providers.md).
+
 ## Where the documentation is
 
 Read the page that owns the subject *before* changing the code, not after.
@@ -119,9 +138,12 @@ Read the page that owns the subject *before* changing the code, not after.
 
 - Strict TypeScript, ESM, `node:` builtins, small pure functions, explicit SQL
   with parameters, no ORM. Match the surrounding style.
-- This package has no GitHub release yet. There is no backwards-compatibility
-  obligation and no deference to prior architecture unless the owner asks for
-  it. Once it is released that changes and breaking changes need evaluating.
+- **Published, and staying 0.x.** There is no 1.0 criterion and no deprecation
+  policy: break what needs breaking, in a minor version, with a CHANGELOG entry
+  saying so. What that does not license is breaking something quietly.
+  `runAgentBatch`, `BatchStore` and `batchConformance` are a subpath export with
+  a consumer behind them, so a change there is felt even though nothing forbids
+  it.
 - Run `pnpm check` before finishing. Add tests for new validation or contract
   logic.
 - When you learn something durable - an invariant, a measured property, a

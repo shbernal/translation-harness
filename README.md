@@ -16,7 +16,11 @@ and the same registry: a review pass that judges what came back instead of
 producing it, proposes rather than mutates, and derives its run id from every
 input it was given.
 
-**Status: pre-release.** The API is not stable and nothing is published yet.
+**Status: 0.x, and staying there.** There is no 1.0 criterion and no date on
+one, because there is one consumer and one author: compatibility is not yet
+worth promising, and what needs breaking gets broken in a minor version. The
+[CHANGELOG](CHANGELOG.md) says, per release, whether anything already published
+changed shape.
 
 ## Requirements
 
