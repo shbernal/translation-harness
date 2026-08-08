@@ -475,6 +475,19 @@ Every row of the run is resolved, decided or not, because a review run is a
 fixed object covering a whole corpus. A caller who wants only the rows somebody
 touched has the decision map to filter by.
 
+### What it needs of a row
+
+Four fields - `rowNumber`, `identifier`, `target`, `proposals` - declared as
+`ReviewDecisionRow`, which a `ReviewItem` satisfies. So the snippet above is the
+ordinary way in and nothing extra is asked of it.
+
+The reason it is not simply `ReviewItem` is the other caller. A hand-validated
+workbook carries the value under review and the proposal in its own columns, and
+those columns, not the run as it stands today, are what the person was reading
+when they chose. Resolving from the workbook is therefore the honest thing to
+do, and a host doing it has no snapshot hashes to hand over and should not be
+invited to invent them.
+
 ### Nothing is retyped
 
 The proposals in the snapshot were normalized when `validateReview` accepted

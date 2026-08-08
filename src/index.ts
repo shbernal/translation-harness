@@ -90,6 +90,7 @@ export {
   type ReviewDecision,
   type ReviewDecisionKind,
   type ReviewDecisionResult,
+  type ReviewDecisionRow,
   type ReviewDecisions,
   resolveDecisions,
 } from './review/decide.ts';

@@ -17,6 +17,11 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   accepted it, and a rewrite somebody typed is written as typed. The degenerate
   cases warn rather than refuse and all fall back to the value under review; a
   field name the run does not have is reported once rather than once per row.
+  It asks a row for the four fields it reads (`ReviewDecisionRow`, which a
+  `ReviewItem` satisfies) rather than for a whole snapshot row, because the
+  caller resolving a hand-validated workbook is reading the value under review
+  and the proposal out of its columns - what the person was actually looking at
+  - and has no snapshot hashes to hand over.
   See [docs/review.md](docs/review.md#the-three-way-decision).
 - `runReview`: executing a review run, as a configuration of `runAgentBatch`.
   The pool, the atomic claim, the retry ladder, the quota pause, the abort path

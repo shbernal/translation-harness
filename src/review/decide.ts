@@ -18,9 +18,34 @@
 // report a nonsensical choice back to.
 
 import type { Fields } from '../job.ts';
-import type { ReviewItem } from '../store/review-types.ts';
 
 export const REVIEW_DECISION_KINDS = ['keep', 'proposal', 'custom'] as const;
+
+/**
+ * A row to decide about: what was under review, and what was proposed for it.
+ *
+ * Four fields rather than a `ReviewItem`, which satisfies this, because the
+ * other caller does not have one. Decisions arrive from outside the run, and so
+ * does the thing they were made about: a hand-validated workbook carries the
+ * value under review and the proposal in its own columns, and those columns -
+ * not the run as it stands today - are what the person was reading when they
+ * chose. Asking that caller for a snapshot would let two inputs disagree with no
+ * way to tell which one the decision was about; asking it for hashes it does not
+ * have would be asking it to invent them.
+ */
+export interface ReviewDecisionRow {
+  /**
+   * This row's key in whatever the caller is resolving. A snapshot's row number
+   * for a run; any stable number for a form. It is the key {@link
+   * ReviewDecisionResult.resolved} comes back under and is never interpreted.
+   */
+  readonly rowNumber: number;
+  readonly identifier: string;
+  /** The value under review, per field. */
+  readonly target: Readonly<Fields>;
+  /** What the reviewer proposed, per field, `null` per field where nothing was. */
+  readonly proposals?: Readonly<Fields> | null;
+}
 
 /**
  * What was decided about one field of one row.
@@ -103,7 +128,7 @@ const KINDS = new Set<string>(REVIEW_DECISION_KINDS);
  * will say in a year.
  */
 export function resolveDecisions(
-  snapshot: Iterable<ReviewItem>,
+  snapshot: Iterable<ReviewDecisionRow>,
   decisions: ReviewDecisions,
 ): ReviewDecisionResult {
   const rows = [...snapshot];
