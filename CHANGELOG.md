@@ -6,6 +6,16 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- `examples/review/cli.ts`, a small CLI over the review lifecycle: `translate`,
+  `init`, `review`, `status`, `decide`, `resolve`, plus `--base` for a chained
+  run and `--mono` for the monolingual one. **An example, not an interface** -
+  no binary is shipped and none of the flags are API. It exists because the two
+  properties worth knowing about a review run are only convincing at a prompt:
+  `init` twice reports the same derived id and `created: false`, while `--mono`
+  or `--profile` reports a different id over the same corpus; and
+  `review --limit 3` leaves the run `running` for the next pass to finish. It
+  keeps nothing on disk about which run is current, because a derived id means
+  it does not have to.
 - `resolveDecisions`: the three-way decision - keep the value under review, take
   the reviewer's proposal, write a custom rewrite - resolved into the text the
   corpus should read. Universal; *where* the choices come from (a workbook

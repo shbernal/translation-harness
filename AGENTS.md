@@ -23,12 +23,17 @@ ESM only. Package manager is pnpm, pinned via `packageManager`.
 ```powershell
 pnpm check                      # typecheck + lint + test (the done gate)
 pnpm build                      # emit dist/ (.js + .d.ts)
-node examples/minimal/run.ts    # the whole loop, offline, in about a second
+node examples/minimal/run.ts    # the whole translate loop, offline, about a second
+node examples/review/cli.ts     # the review lifecycle, verb by verb; start with `help`
 ```
 
 Run the example when you have changed anything on the path from a job to a
 committed row. It exercises more of the library end to end than any single test
-and it costs nothing.
+and it costs nothing. The review CLI is the same gate for the review half:
+`translate`, `init`, `init` again, `review --limit 3`, `review`. The second
+`init` must report the same run id and `created: false`, and it must be the same
+id on a machine that has never run it, because nothing machine-local is one of
+the id's inputs.
 
 The source tree runs directly under Node's type stripping, which is why
 `erasableSyntaxOnly` is on and why relative imports keep their `.ts` extension.

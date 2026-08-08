@@ -82,6 +82,26 @@ const summary = await runTranslation(store, job, await store.selectCandidates({}
 
 Switching to a real agent is one line: `provider: 'codex'`, plus a `model`.
 
+### The review lifecycle, at a prompt
+
+```bash
+node examples/review/cli.ts translate
+node examples/review/cli.ts init
+node examples/review/cli.ts init                # the same run id, created: false
+node examples/review/cli.ts review --limit 3
+node examples/review/cli.ts review              # resume the rest
+```
+
+[`examples/review/cli.ts`](examples/review/cli.ts) drives the review half the
+same way, offline, over eight rows. **It is an example rather than an
+interface:** the package ships no binary and none of its flags are API. It is
+there because the two properties worth knowing about a review run are only
+convincing at a prompt. A run id is *derived* from every input rather than
+generated, so running `init` twice is the same run while `--mono` or `--profile`
+is a different one; and a run is a job that a pass executes, so `--limit 3`
+stops at three rows and the next `review` takes the rest. Nothing about which
+run is current is stored anywhere, because a derived id means it need not be.
+
 ## What you get that a for-loop over `spawn` does not
 
 Every item here exists because a simpler version of it failed in production.

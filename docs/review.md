@@ -439,6 +439,12 @@ rather than with the defaults, which is both what a provider honouring the
 schema would do and the only way its answers pass `validateReview` for a job
 that overrode them.
 
+[`examples/review/cli.ts`](../examples/review/cli.ts) drives the whole lifecycle
+with it - init, one pass, resume, chain, decide, resolve - over eight rows and no
+network. It is an example rather than an interface, and it exists for the two
+things prose cannot show: `init` run twice reporting the same derived id, and a
+pass stopped at `--limit 3` being finished by the next one.
+
 ## The three-way decision
 
 A review run only ever proposes. Somebody then goes through it and decides, per
