@@ -2,7 +2,9 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
-## Unreleased
+## 0.2.1
+
+A framework a termbase plugs into, and a way to read the corpus back.
 
 ### Added
 
