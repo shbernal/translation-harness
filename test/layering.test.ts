@@ -23,6 +23,7 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
 type Layer =
   | 'errors'
+  | 'glossary'
   | 'provider'
   | 'batch'
   | 'job'
@@ -53,6 +54,14 @@ type Layer =
  *   translation is defined, and `translation-harness/batch` promises a runner
  *   that has never heard of it. `store` importing `batch` is the allowed
  *   direction of that edge: `TranslationStore` extends `BatchStore`.
+ * - `glossary` imports **nothing**, which is what lets either lifecycle bind a
+ *   termbase. Only `contract` binds one today, but a pack is not translation
+ *   knowledge and `review` may not import `contract`, so putting the core there
+ *   would put it out of reach of the half that has no adapter and fills its two
+ *   fields from `glossaryBlock` and `termsDigest` by hand. Keeping the list
+ *   empty is also the mechanical half of a claim the module makes in prose: it
+ *   holds no language tables, and an import of `job` would be the first step
+ *   back toward the pack registry this design exists to avoid.
  * - `review` may **not** import `pipeline`. Both are lifecycles built on
  *   `batch`, and they are siblings: a review that reached into the translation
  *   runner would be the beginning of a third runner nobody decided to write.
@@ -74,19 +83,31 @@ type Layer =
  */
 const MAY_IMPORT: Record<Layer, readonly Layer[]> = {
   errors: [],
+  glossary: [],
   provider: ['errors'],
   batch: ['errors', 'provider'],
   job: ['errors'],
-  contract: ['errors', 'job', 'provider'],
+  contract: ['errors', 'glossary', 'job', 'provider'],
   store: ['errors', 'job', 'batch'],
   review: ['errors', 'job', 'provider', 'batch', 'store'],
   pipeline: ['errors', 'job', 'provider', 'batch', 'contract', 'store'],
-  index: ['errors', 'job', 'provider', 'batch', 'contract', 'store', 'review', 'pipeline'],
+  index: [
+    'errors',
+    'glossary',
+    'job',
+    'provider',
+    'batch',
+    'contract',
+    'store',
+    'review',
+    'pipeline',
+  ],
 };
 
 /** Single-file layers, keyed by their path relative to `src/`. */
 const FILE_LAYERS: ReadonlyMap<string, Layer> = new Map([
   ['errors.ts', 'errors'],
+  ['glossary.ts', 'glossary'],
   ['job.ts', 'job'],
   ['index.ts', 'index'],
 ]);
@@ -302,6 +323,7 @@ describe('the layer map', () => {
   // being filled in, and nobody finds out until the rule has already been broken.
   it('claims the files and directories the table declares', () => {
     assert.equal(layerOf('errors.ts'), 'errors');
+    assert.equal(layerOf('glossary.ts'), 'glossary');
     assert.equal(layerOf('job.ts'), 'job');
     assert.equal(layerOf('index.ts'), 'index');
     assert.equal(layerOf(join('provider', 'run.ts')), 'provider');
@@ -333,6 +355,11 @@ describe('the layer map', () => {
     assert.ok(
       !MAY_IMPORT.store.includes('review'),
       'the review lifecycle names the store seam; the store must not name the lifecycle',
+    );
+    assert.deepEqual(
+      MAY_IMPORT.glossary,
+      [],
+      'the termbase core has to stay bindable from either lifecycle, which means importing nothing',
     );
     for (const [layer, allowed] of Object.entries(MAY_IMPORT)) {
       if (layer === 'index') continue;

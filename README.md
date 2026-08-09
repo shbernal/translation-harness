@@ -235,10 +235,17 @@ No ingestion, no export, no rendering, no opinion about your source format. It
 will not read your spreadsheet, will not write your deliverable, and does not
 know what a column is. Review ships as the mechanism only - the run, the prompt,
 the verdicts and the decision model - while the workbook you send a linguist and
-the diff they read stay yours. Terminology and glossary management and
-language-specific typography remain out of scope, with hooks (`job.normalize`,
-`job.promptExtras`, `job.promptSalt`, `ReviewJob.extraInputs`) where they
-attach.
+the diff they read stay yours. Language-specific typography stays out of scope
+too, with `job.normalize` as the hook it attaches at.
+
+A termbase is the one of these that ships as a **framework and not a feature**.
+`glossaryHook` puts a per-row glossary in front of the translator, and
+`glossaryBlock` puts the standing pack in front of the reviewer, both from one
+entry list so the two cannot drift; the matching seam is a predicate, so no
+language pack has to exist here for any of it to work. What stays yours is
+everything that decides content: the term list, the folding and inflection rules,
+and every word the model reads, since entries carry text the library only copies.
+See [docs/contract.md](docs/contract.md#a-termbase-without-a-language-pack).
 
 ## Implementing your own store
 

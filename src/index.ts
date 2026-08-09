@@ -15,6 +15,11 @@
 // `translation-harness/providers`, and a subpath export whose contents also
 // appear at the root is a subpath export that means nothing.
 
+// Binding a termbase to a translation job: both of a job's pack-shaped hooks
+// from one entry list, so a run cannot inject one pack and record another.
+// There is no review-side equivalent; `glossaryBlock` and `termsDigest` fill a
+// review job's two fields directly, and `docs/review.md` shows the two lines.
+export { type GlossaryHookOptions, glossaryHook } from './contract/glossary.ts';
 // The offline provider. Opt in by name; it is never registered for you.
 export { invokeMock, MOCK_PROVIDER_NAME, registerMockProvider } from './contract/mock.ts';
 // The model contract: the prompt, the schema, and the two hashes that give a
@@ -44,6 +49,17 @@ export {
 // Failures. `TransientFailure` is what a custom provider raises; the categories
 // are what the runner decides on.
 export { type FailureCategory, isQuotaError, QuotaExceeded, TransientFailure } from './errors.ts';
+// The termbase framework: entries, the matcher seam, and the digest both
+// lifecycles record. No term lists, no folding tables, no determiners - which
+// words are canonical is the host's judgement and stays there.
+export {
+  glossaryBlock,
+  selectTerms,
+  substringMatcher,
+  type TermEntry,
+  type TermMatcher,
+  termsDigest,
+} from './glossary.ts';
 // What a job is: the types a caller fills in.
 export {
   DEFAULT_THRESHOLDS,

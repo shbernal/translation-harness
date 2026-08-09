@@ -184,7 +184,9 @@ extraInputsDigest(job);   // sha256 over the bag, in sorted key order
 ```
 
 Values are opaque strings, hashed and never interpreted. Put a digest here, not a
-document.
+document. For a termbase specifically, `termsDigest` fills this key and
+`glossaryBlock` fills the `terminology` block, both from one entry list - see
+[below](#a-termbase-on-the-review-side).
 
 **An empty or absent bag digests to the empty string**, and that is a contract
 term rather than an implementation detail: the derivation appends the digest to
@@ -198,6 +200,71 @@ an `undefined` value silently, which would make `{ termbase: undefined }` digest
 identically to `{}` - the one collision this whole mechanism exists to prevent.
 For the same reason `{ termbase: '' }` is not the same as no key at all: a host
 that declares an input and has nothing in it this time has still declared it.
+
+## A termbase on the review side
+
+The termbase core is lifecycle-neutral, so a review job fills its two
+pack-shaped fields from the same entry list
+[`glossaryHook`](contract.md#a-termbase-without-a-language-pack) is given on the
+translation side:
+
+```ts
+const reviewJob: ReviewJob = {
+  ...rest,
+  terminology: glossaryBlock(ENTRIES),
+  extraInputs: { termbase: termsDigest(ENTRIES) },
+};
+```
+
+**The shape differs from the translation side, and the difference is the point.**
+A translator is asked about one row, so it is shown the entries that row
+contains. A reviewer is asked to hold a whole corpus to a standard, so it is
+shown the standard. Per-run rather than per-row - and with no row to select
+against, there is nothing left for an adapter to derive, which is why the
+translation side has `glossaryHook` and this side has two assignments.
+
+Feeding both sides one list is what keeps the standard a row was translated
+under and the standard it is judged against from drifting apart. A review whose
+pack has moved since the pass ran is judging rows against rules they were never
+shown - quietly, and in the direction that manufactures findings. Nothing checks
+this for you here: the translation side derives its block and its salt from one
+argument so they cannot disagree, while a review job names the list twice.
+
+### The digest is nearly redundant, and the residue is the `match` forms
+
+`terminology` is already hashed into the run id whole, so everything the reviewer
+is *shown* is covered without any host input at all. What the digest adds is the
+`match` forms, which are real inputs to the run and appear nowhere in the
+rendered text: two packs differing only in which forms fire produce the same
+reviewer prompt and a differently translated corpus. The snapshot hash catches
+that through the rows, so the case this closes is narrow - it is the case where a
+host wants "governed by pack N" to be part of what the run *means* rather than
+something inferable from its rows.
+
+Declaring it is the safer default, because an identity input that has to be
+remembered is one that gets forgotten. Leaving it out is legitimate for a host
+that would rather its review ids not move when a form is added to an entry
+nothing renders differently.
+
+Whichever you choose, `extraInputs` is one bag: a job that already declares a
+style-guide revision has to keep it alongside the termbase digest rather than be
+spread over. A dropped identity input does not fail - it makes two different
+runs agree on an id.
+
+### Adopting it moves existing run ids
+
+If the rendered pack differs by a byte from whatever the host was passing before,
+every run over that corpus derives a new id. That is the mechanism working: a
+different standing text is a different review. Derive the ids first with
+`deriveReviewRun` if the old runs need to stay reachable.
+
+An **empty** pack can reproduce the job that never had one, but only if you let
+it. `glossaryBlock([])` is `''`, which emits no block and hashes exactly as an
+absent field does, so `terminology` takes care of itself. The host input does
+not: `termsDigest([])` is `''` too, and **`{ termbase: '' }` is deliberately not
+the same as no key**, so a host that writes the key unconditionally gives an
+empty pack a different run id from no pack at all. Omit the key when the pack is
+empty rather than emptying it.
 
 ## Opening a run
 

@@ -22,16 +22,17 @@ Each layer may import **only** the layers listed, and nothing else inside
 | Layer | Files | May import |
 |---|---|---|
 | `errors` | `src/errors.ts` | nothing |
+| `glossary` | `src/glossary.ts` | nothing |
 | `provider` | `src/provider/**` | `errors` |
 | `batch` | `src/batch/**` | `errors`, `provider` |
 | `job` | `src/job.ts` | `errors` |
-| `contract` | `src/contract/**` | `errors`, `job`, `provider` |
+| `contract` | `src/contract/**` | `errors`, `glossary`, `job`, `provider` |
 | `store` | `src/store/**` | `errors`, `job`, `batch` |
-| `review` | `src/review/**` | `errors`, `job`, `provider`, `batch`, `store` |
+| `review` | `src/review/**` | `errors`, `glossary`, `job`, `provider`, `batch`, `store` |
 | `pipeline` | `src/pipeline/**` | `errors`, `job`, `provider`, `batch`, `contract`, `store` |
 | `index` | `src/index.ts` | all of them; nothing imports it |
 
-A layer may always import itself. Five edges are worth stating out loud:
+A layer may always import itself. Six edges are worth stating out loud:
 
 - **`contract` may import `provider`.** The offline mock registers itself and
   needs the invoker types. It lives in `contract/` because it parses the prompt
@@ -60,6 +61,13 @@ A layer may always import itself. Five edges are worth stating out loud:
   two lifecycles differ by which contract they configure the one runner with.
   **The reverse edge is the one to watch: `store` must not import `review`**, or
   the SQLite implementation and the lifecycle it stores stop being two things.
+- **`glossary` imports nothing**, which is what keeps it bindable from either
+  lifecycle. Only `contract` binds it today, but a pack is not translation
+  knowledge and `review` may not import `contract`, so putting the core there
+  would put it out of reach of the half that fills its two fields by hand. The
+  empty list is also the mechanical half of a claim the module makes in prose:
+  it holds no language tables and no translation knowledge. See
+  [the termbase section in contract.md](contract.md#a-termbase-without-a-language-pack).
 
 ### Why this is a test and not a paragraph
 

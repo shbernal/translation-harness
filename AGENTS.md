@@ -123,6 +123,7 @@ Read the page that owns the subject *before* changing the code, not after.
 |---|---|
 | `src/provider/**`, or anything about what a row costs | [docs/providers.md](docs/providers.md) |
 | `src/contract/prompt.ts`, `src/contract/schema.ts`, `src/job.ts` | [docs/contract.md](docs/contract.md) |
+| `src/glossary.ts`, `src/contract/glossary.ts` | [docs/contract.md](docs/contract.md) and [docs/review.md](docs/review.md) - one termbase, bound by each lifecycle |
 | `src/contract/validate.ts`, a validator, or a threshold | [docs/guardrails.md](docs/guardrails.md) |
 | `src/review/**`, the reviewer prompt or schema, the severity and confidence scales | [docs/review.md](docs/review.md) |
 | `src/pipeline/**`, resume, concurrency or quota semantics | [docs/pipeline.md](docs/pipeline.md) |

@@ -103,6 +103,90 @@ that cannot see the difference will reuse answers produced under different
 rules. So the pack's digest goes into the hash without going into the prompt. An
 empty salt leaves the hash exactly where it has always been.
 
+## A termbase without a language pack
+
+The hooks above are what a per-row glossary is built on, and building one by hand
+gets one thing wrong reliably. A pack reaches a translation run **twice** - as
+text through `promptExtras`, as a digest through `promptSalt` - and it reaches a
+review run twice more, as the `TERMINOLOGY` block and as an `extraInputs` entry.
+Four hooks over one input. Fill them from four places and you can inject one pack
+while recording the identity of another; nothing reports it, and what it buys is
+a resume reusing answers produced under rules nobody can still name.
+
+`glossaryHook` returns both translation-side hooks from one entry list, so that
+state has nowhere to come from. The review side has no such hook and needs none:
+its two are plain fields, filled by
+[`glossaryBlock` and `termsDigest`](review.md#a-termbase-on-the-review-side)
+from the same list.
+
+```ts
+const ENTRIES: TermEntry[] = [
+  { match: ['access control'], render: '- access control -> controle d acces' },
+  { match: ['policy', 'policies'], render: '- policy -> politique (eviter: police)' },
+];
+
+const job: TranslationJob = {
+  ...rest,
+  fields: FIELDS,
+  ...glossaryHook({ entries: ENTRIES, heading: GLOSSARY_HEADING, fields: FIELDS }),
+};
+```
+
+**There are no term lists here, and no language tables.** Which words are
+canonical is a judgement about one language pair and one domain, and a library
+that shipped that judgement would be making it for every host. What is published
+is the mechanism a host's own pack plugs into.
+
+### The two fields of an entry, and why one of them is a string
+
+`match` is data the library compares. `render` is text the library only ever
+copies. That split is what keeps every language-policy decision - which label
+marks a banned form, what separates a source term from its target, which language
+any of it is written in - on the host's side of the boundary.
+
+`render` is a string rather than a callback so `termsDigest` is provably a digest
+of exactly what gets injected. With a callback the two could disagree and nothing
+would notice.
+
+### The matcher is a predicate, not a profile
+
+```ts
+type TermMatcher = (text: string, term: string) => boolean;
+```
+
+A profile of folding rules, determiners and inflection suffixes is *one* matching
+strategy and an opinionated one. A predicate presumes nothing: a regex profile
+satisfies it, and so do a stemmer, a lemmatizer, an ICU collator and plain
+substring search. Because the library never composes a pattern, it never needs to
+know what a determiner is - which is the reason no language pack has to exist
+here for any of this to ship.
+
+It must be a pure function of its two arguments. It runs once per entry per row
+and its answers become prompt bytes, so a matcher that reads a clock or a locale
+makes a run unreproducible.
+
+The default, `substringMatcher`, is case-insensitive substring search and is
+honestly naive: it will not match `Massnahmen` from a pack authored with
+`Massnahme`, and it fires `art` inside `restart`. It is right for proper nouns
+and product names, and the point of it is that the floor is zero rather than a
+language pack. Anything inflected wants a matcher of its own.
+
+### What an empty pack costs
+
+Nothing, and that is a contract term rather than a happy accident. An empty entry
+list makes `promptExtras` answer `''` for every row, which `buildPrompt` composes
+identically to a job with no hook, and makes `termsDigest` answer `''`, which
+leaves `jobPromptHash` exactly where it was. Same for a pack that simply matched
+nothing on this row. That is what makes adding a termbase to a corpus already
+half translated safe.
+
+`selectTerms` skips empty `match` forms rather than matching them, because under
+the default matcher `''` is a substring of everything: an entry that lost its
+forms to a bad parse would otherwise attach itself to every row in the corpus.
+
+If the job already has a `promptSalt`, pass it as `salt` rather than losing it -
+spreading the result over a job replaces the field outright.
+
 ## `sourceLang` is a free string
 
 Deliberately. A host with language-specific tables (term folding, determiners,

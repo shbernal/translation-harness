@@ -6,6 +6,53 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Added
 
+- **A termbase framework, and no termbase.** `TermEntry`, `TermMatcher`,
+  `selectTerms`, `glossaryBlock` and `termsDigest` in a new `src/glossary.ts`,
+  plus `glossaryHook`, which binds an entry list to a translation job by
+  returning its `promptExtras` and `promptSalt`. A review job takes the same
+  list through its own two fields: `terminology` is `glossaryBlock(entries)` and
+  the host input is `termsDigest(entries)`. There is no adapter for that pair,
+  because a reviewer is shown the standard whole rather than per row, which
+  leaves nothing to derive and two assignments to make.
+
+  There are no term lists here, no folding tables, no determiners and no
+  inflection rules. Which words are canonical is a judgement about one language
+  pair and one domain; what is published is the mechanism a host's own pack plugs
+  into. That is why the matching seam is a predicate, `(text, term) => boolean`,
+  rather than a language profile: a regex profile satisfies it and so do a
+  stemmer, a lemmatizer and plain substring search, and because the library never
+  composes a pattern it never needs to know what a determiner is. The default
+  matcher is case-insensitive substring search and is documented as naive.
+
+  `glossaryHook` exists because a pack reaches a translation run twice, as text
+  through `promptExtras` and as identity through `promptSalt`, and a host
+  filling those from two places can inject one pack while recording another.
+  Nothing reports that; what it buys is a resume reusing answers produced under
+  rules nobody can still name. Derived from one entry list, the mismatch has
+  nowhere to come from.
+
+  `termsDigest` covers both fields of an entry rather than the rendered text
+  alone. Adding a form to `match` changes the per-row block on every row that
+  form occurs in and changes nothing anyone is shown, so a digest over the
+  rendering would call two materially different runs one run.
+
+  **An empty pack reproduces the job that never had one**, byte for byte and
+  hash for hash: `promptExtras` answers `''` and `promptSalt` is whatever salt
+  was handed in, so `jobPromptHash` does not move. `glossaryBlock([])` is `''`,
+  which emits no `TERMINOLOGY` block and hashes as an absent field does. The one
+  half a review host has to get right itself is the input key: `termsDigest([])`
+  is also `''`, and `{ termbase: '' }` is deliberately not the same as no key,
+  so an empty pack has to omit the key rather than write it empty. Adding a
+  termbase to a corpus already half translated is safe; rendering one through
+  `glossaryBlock` where the host was formatting its own will move review run ids
+  if the text differs by a byte.
+
+- **A `glossary` layer**, at the bottom of the stack with no imports at all.
+  A pack is not translation knowledge and `review` may not import `contract`, so
+  putting the core under `contract` would put it out of reach of the lifecycle
+  that binds it by hand. The empty allow-list is also the mechanical half of the
+  claim above: a module that holds no language tables has nothing to import.
+
 - **`TranslationStore.items()`**: every row of the corpus, in row-number order,
   whatever its status. `Item` satisfies `ReviewSourceRow` structurally, so opening
   a review run over a registry-backed corpus is now
