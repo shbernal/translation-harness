@@ -203,14 +203,15 @@ describe('genericReviewReasons', () => {
     );
   });
 
-  test('a row whose fields are all blank trips the ratio check', () => {
-    // Documented rather than fixed. `0 / max(0, 1)` is 0, which is below any
-    // sane lower bound, so a row where every translatable field is empty is
-    // always sent to review. It is inherited behaviour and it is defensible
-    // (a row with nothing to translate is worth a human glance), but it is a
-    // surprise, and quietly changing it would change which rows a resumed run
-    // reports. Raise it as a decision, do not patch it here.
-    assert.deepEqual(genericReviewReasons('', '', T), ['suspicious combined length ratio: 0.00']);
+  test('a row whose fields are all blank is flagged, and says so in those terms', () => {
+    // The behaviour is kept: `0 / max(0, 1)` is below any sane lower bound, so a
+    // row where every translatable field is empty is still sent to review, which
+    // is defensible (a row with nothing to translate is worth a human glance).
+    // What changed is the reason. `suspicious combined length ratio: 0.00`
+    // described the arithmetic and read as a warning about the translation;
+    // there is no translation to warn about. A resumed run reports different
+    // text for these rows, not a different set of rows.
+    assert.deepEqual(genericReviewReasons('', '', T), ['no translatable content']);
   });
 
   test('flags a suspicious length ratio and says what it was', () => {

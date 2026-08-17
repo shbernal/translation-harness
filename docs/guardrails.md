@@ -37,6 +37,8 @@ waved through.
 - **Square-bracket count differs from source.** Cheap proxy for a dropped
   placeholder or reference.
 - **Suspicious combined length ratio.** See below.
+- **No translatable content.** The same check, reported in its own terms when
+  there was nothing to measure. See below.
 - **Translation is identical to the source.** Usually the model echoing back
   rather than translating.
 - **Model warnings**, surfaced as `model warning: ...`.
@@ -102,13 +104,13 @@ const job: TranslationJob = {
 Adding a fixture source adds its pairs to the calibration automatically, which
 is the cheapest way to extend the claim. See `test/fixtures/README.md`.
 
-### A known quirk
+### The all-blank row
 
-A row whose translatable fields are **all blank** always trips the ratio check:
-zero over one is zero, which is below any sane lower bound, so the row goes to
-review with `suspicious combined length ratio: 0.00`. It is defensible (a row
-with nothing to translate is worth a glance) and it is a surprise, so it is
-written down rather than fixed.
+A row whose translatable fields are **all blank** trips the ratio check by
+construction: zero over one is zero, which is below any sane lower bound. The row
+goes to review, which is deliberate - a row with nothing to translate is worth a
+glance - and the reason it carries is `no translatable content` rather than a
+ratio, because there is no translation for a ratio to be suspicious about.
 
 ## Normalization runs before the checks
 

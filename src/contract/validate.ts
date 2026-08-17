@@ -45,9 +45,19 @@ export function genericReviewReasons(
   if (open(source) !== open(translated) || close(source) !== close(translated)) {
     reasons.push('square-bracket count differs from source');
   }
+  // A row with nothing to translate trips the lower bound by construction: zero
+  // over max(0, 1) is zero. Sending it to review is deliberate - a row that is
+  // entirely blank is worth a human glance - but calling it a suspicious ratio
+  // described the arithmetic rather than the row. Which rows are flagged is
+  // unchanged; only the text of the reason is.
   const ratio = translated.length / Math.max(source.length, 1);
-  if (ratio < thresholds.minLengthRatio || ratio > thresholds.maxLengthRatio)
-    reasons.push(`suspicious combined length ratio: ${ratio.toFixed(2)}`);
+  if (ratio < thresholds.minLengthRatio || ratio > thresholds.maxLengthRatio) {
+    reasons.push(
+      source.trim()
+        ? `suspicious combined length ratio: ${ratio.toFixed(2)}`
+        : 'no translatable content',
+    );
+  }
   if (translated.trim() === source.trim() && source.trim().length > 0) {
     reasons.push('translation is identical to source');
   }

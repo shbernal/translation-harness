@@ -2,6 +2,22 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- **A row with nothing to translate now says so.** A row whose translatable
+  fields are all blank still goes to `review_required` - that is deliberate, and
+  it is the inherited behaviour - but its reason is `no translatable content`
+  rather than `suspicious combined length ratio: 0.00`. The ratio was arithmetic
+  about an empty string, and it read as a warning about a translation that does
+  not exist.
+
+  Which rows are flagged is unchanged, so a resumed run reports different text
+  for these rows and not a different set of rows. A host that matches on the
+  reason string will need the new one; nothing in the library selects on it, and
+  it is provenance rather than state.
+
 ## 0.2.1
 
 A framework a termbase plugs into, and a way to read the corpus back.
