@@ -43,7 +43,14 @@ export interface ReviewDecisionRow {
   readonly identifier: string;
   /** The value under review, per field. */
   readonly target: Readonly<Fields>;
-  /** What the reviewer proposed, per field, `null` per field where nothing was. */
+  /**
+   * What the reviewer proposed, per field, `null` per field where nothing was.
+   *
+   * An empty string is read as `null` rather than as a rewrite to empty. It is
+   * out of contract on the way in, but it crosses a process boundary from a
+   * model and `validateReview` accepts `string | null` per field, so it is
+   * warned about rather than trusted.
+   */
   readonly proposals?: Readonly<Fields> | null;
 }
 
@@ -188,7 +195,12 @@ export function resolveDecisions(
         case 'proposal': {
           counts.proposal += 1;
           const proposed = row.proposals?.[field];
-          if (proposed == null) {
+          // Empty reads as nothing proposed, exactly as it does for a rewrite
+          // below. A `''` from a model is the same shape of accident as a `''`
+          // from a person and is less visible, because nobody typed it and
+          // nothing displays it; a form defaulting to `proposal` wherever a
+          // proposal is non-null would pre-select the deletion.
+          if (proposed == null || proposed === '') {
             warnings.push(
               `${where}: 'proposal' chosen but the reviewer proposed nothing here; ` +
                 'kept the value under review',

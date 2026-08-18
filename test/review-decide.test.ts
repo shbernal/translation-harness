@@ -164,6 +164,39 @@ describe('a choice that cannot be honoured', () => {
     ]);
   });
 
+  // Reported as issue #1: the two branches were twenty lines apart and
+  // disagreed about the same value, `proposal` writing `''` over the target
+  // while `custom` refused it. The reported shape is the dangerous one - an
+  // exporter defaulting a field's dropdown to `proposal` wherever the proposal
+  // is non-null pre-selects the deletion, and `warnings` was empty.
+  test("'proposal' of an empty string keeps the value and says so", () => {
+    const snapshot = [
+      item(
+        1,
+        'AC-1',
+        { name: 'kept name', description: 'kept description' },
+        {
+          outcome: 'change_proposed',
+          proposals: { name: 'proposed name', description: '' },
+        },
+      ),
+    ];
+    const { resolved, counts, warnings } = resolveDecisions(
+      snapshot,
+      decisions({
+        'AC-1': { name: { kind: 'proposal' }, description: { kind: 'proposal' } },
+      }),
+    );
+
+    assert.equal(resolved.get(1)?.name, 'proposed name', 'a real proposal is still taken');
+    assert.equal(resolved.get(1)?.description, 'kept description', 'an empty one is not');
+    assert.deepEqual(counts, { keep: 0, proposal: 2, custom: 0 }, 'both were chosen');
+    assert.deepEqual(warnings, [
+      "AC-1 · description: 'proposal' chosen but the reviewer proposed nothing here; " +
+        'kept the value under review',
+    ]);
+  });
+
   // An empty rewrite reads as a cell somebody meant to fill in, not as "blank
   // this field". Reading it the other way would let a slip delete text with no
   // trace, which is the one outcome a resolution step must not have.

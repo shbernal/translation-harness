@@ -599,14 +599,28 @@ which is the choice that changes nothing:
 | what happened | what it does |
 |---|---|
 | `proposal` chosen, the reviewer proposed nothing there | keeps, warns |
+| `proposal` chosen, the reviewer's proposal is `''` | keeps, warns |
 | `custom` chosen, no rewrite supplied | keeps, warns |
 | a decision this library does not recognize | keeps, warns |
 | a field name the run does not have | ignores, warns **once** rather than once per row |
 | an identifier the run does not have | ignores, warns |
 
-An **empty** rewrite counts as no rewrite. Reading it as "blank this field"
-would let a slip delete text with no trace; blanking a field is worth typing a
-space for.
+An **empty** rewrite counts as no rewrite, and an **empty proposal** counts as
+no proposal. Reading either as "blank this field" would let a slip delete text
+with no trace; blanking a field is worth typing a space for.
+
+The proposal half of that is about a value a model wrote rather than a person.
+`proposals` is documented as `null` per field where nothing was proposed, so a
+`''` is out of contract on the way in - but it crosses a process boundary and
+`validateReview` accepts `string | null` per field, so it is warned about rather
+than trusted. It is the less visible of the two accidents: nobody typed it and
+nothing displays it, and an exporter that defaults a field to `proposal`
+wherever the proposal is non-null has the deletion pre-selected before anybody
+looks at the row.
+
+`resolveRunOutput` applies the same rule with no warning attached, having
+nowhere to report. That is the half where it matters more, since an emptied
+field would become the next stage's snapshot unrecorded.
 
 `counts` tallies what was *chosen*, so a choice that could not be honoured still
 counts under it. The tally answers "what did the human do"; the warnings say

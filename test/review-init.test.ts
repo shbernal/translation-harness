@@ -520,6 +520,20 @@ describe('resolveRunOutput', () => {
     assert.deepEqual(resolved.get(1), { name: 'Politique de controle', description: 'Texte' });
   });
 
+  // The same rule `resolveDecisions` applies to an empty proposal, and the
+  // half that needs it more: nobody is reading this loop and there is no
+  // warnings channel, so an emptied field would reach the next stage's
+  // snapshot with nothing recording that it had been emptied.
+  test('an empty proposal is nothing proposed, not a rewrite to empty', () => {
+    const resolved = resolveRunOutput([
+      item({
+        outcome: 'change_proposed',
+        proposals: { name: 'Politique de controle', description: '' },
+      }),
+    ]);
+    assert.deepEqual(resolved.get(1), { name: 'Politique de controle', description: 'Texte' });
+  });
+
   test('leaves a row alone unless the reviewer proposed a change', () => {
     for (const outcome of ['pass', 'pending', 'failed'] as const) {
       const resolved = resolveRunOutput([item({ outcome, proposals: { name: 'Ignored' } })]);

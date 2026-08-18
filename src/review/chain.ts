@@ -17,7 +17,11 @@ import type { ReviewItem } from '../store/review-types.ts';
  * Only a `change_proposed` row contributes a rewrite, and only for the fields
  * whose proposal is non-null - `null` is how a reviewer says "keep what is
  * there", per field, so a row that changed one field of three leaves the other
- * two exactly as they were. A `pass` row resolves to its snapshot unchanged,
+ * two exactly as they were. An empty proposal counts as `null` here too, and
+ * this is the harder half of that rule: there is no human in the chain loop and
+ * no warnings channel to report into, so a `''` written over a target would
+ * become the next stage's snapshot with nothing anywhere recording that a field
+ * was emptied. A `pass` row resolves to its snapshot unchanged,
  * and so does a row that never got an answer: the run's own outcome column is
  * where "this row was not reviewed" is recorded, not here.
  *
@@ -31,7 +35,7 @@ export function resolveRunOutput(snapshot: Iterable<ReviewItem>): Map<number, Fi
     const target: Fields = { ...item.target };
     if (item.outcome === 'change_proposed' && item.proposals) {
       for (const [key, value] of Object.entries(item.proposals)) {
-        if (value != null) target[key] = value;
+        if (value != null && value !== '') target[key] = value;
       }
     }
     resolved.set(item.rowNumber, target);

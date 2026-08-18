@@ -4,6 +4,29 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ## Unreleased
 
+### Fixed
+
+- **An empty proposal no longer blanks the field it was proposed for.**
+  ([#1](https://github.com/shbernal/translation-harness/issues/1)) Choosing
+  `proposal` on a field where the reviewer emitted `""` wrote the empty string
+  over the target and warned about nothing. The `custom` branch twenty lines
+  below already refused exactly that, with a rationale that applies word for
+  word to both, so the two halves of one `switch` disagreed about one value.
+  Both now read empty as nothing proposed, keep the value under review, and say
+  so in `warnings`.
+
+  `resolveRunOutput` had the same hole and is fixed with it. That is the half
+  that matters more: a chained run has no human in the loop and no warnings
+  channel, so an emptied field became the next stage's snapshot with nothing
+  anywhere recording it.
+
+  Reported against reasoning rather than against an incident - a completed
+  79-row run in the reporter's project held 145 `null` proposals, 3 real ones
+  and no empty strings, so reviewers do emit `null` as documented. What makes it
+  worth fixing is that the failure would be quiet and pre-selected: an exporter
+  defaulting a field's dropdown to `proposal` wherever the proposal is non-null
+  offers the deletion already chosen, and `""` is non-null.
+
 ### Changed
 
 - **A row with nothing to translate now says so.** A row whose translatable
