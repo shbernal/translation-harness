@@ -483,22 +483,43 @@ export function reviewStore(
      * process behind it; a run may have been created yesterday and legitimately
      * be executing now, so its `created_at` is not evidence about liveness and
      * reading it as such would interrupt a healthy job.
+     *
+     * The same argument then applies one level down, and used not to. A pass
+     * has a start time and a process, but a *long* pass has an old start time
+     * and a working process, so a pass is interrupted only when it also holds
+     * no row touched since the cutoff. Its rows are the evidence; its age is
+     * not. That gate is what lets the attempts statement key off pass status
+     * alone - it used to close dangling attempts for any pass merely *started*
+     * before the cutoff, stamping `abandoned` over the in-flight attempts of a
+     * healthy long pass and then interrupting the pass underneath them.
+     *
+     * `pass_id IS NOT NULL` inside the subquery is load-bearing rather than
+     * tidy: one NULL in a `NOT IN` list makes the comparison NULL for every
+     * row, which would switch pass reclamation off entirely.
      */
     async reclaimStale(ageMinutes = 30): Promise<number> {
       const cutoff = new Date(Date.now() - ageMinutes * 60_000)
         .toISOString()
         .replace(/\.\d{3}Z$/, 'Z');
       return tx(db, () => {
+        // The passes statement goes first, so a pass this call has just
+        // declared dead has its dangling attempts closed by the next one, in
+        // the same transaction.
+        db.prepare(
+          `UPDATE review_passes SET status = 'interrupted', finished_at = ?
+           WHERE review_run_id = ? AND status = 'running' AND started_at <= ?
+             AND pass_id NOT IN (
+               SELECT pass_id FROM review_items
+               WHERE review_run_id = ? AND outcome = 'running' AND pass_id IS NOT NULL
+                 AND updated_at > ?
+             )`,
+        ).run(utcnow(), reviewRunId, cutoff, reviewRunId, cutoff);
         db.prepare(
           `UPDATE review_attempts SET finished_at = ?, outcome = 'failed', error_category = 'abandoned',
              error_message = 'runner ended before recording the attempt result'
            WHERE review_run_id = ? AND outcome IS NULL
-             AND pass_id IN (SELECT pass_id FROM review_passes WHERE status != 'running' OR started_at <= ?)`,
-        ).run(utcnow(), reviewRunId, cutoff);
-        db.prepare(
-          `UPDATE review_passes SET status = 'interrupted', finished_at = ?
-           WHERE review_run_id = ? AND status = 'running' AND started_at <= ?`,
-        ).run(utcnow(), reviewRunId, cutoff);
+             AND pass_id IN (SELECT pass_id FROM review_passes WHERE status != 'running')`,
+        ).run(utcnow(), reviewRunId);
         const cursor = db
           .prepare(
             `UPDATE review_items SET outcome = 'pending', pass_id = NULL,

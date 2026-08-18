@@ -405,20 +405,46 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
      * reading of a zero cutoff and the only version of this that a test can
      * assert without sleeping. At the default 30 minutes the difference is one
      * second at the boundary.
+     *
+     * **A run's start time is not evidence about its liveness; its rows are.**
+     * A batch that legitimately runs longer than `ageMinutes` has an old
+     * `started_at` and a working process, so the run is interrupted only when
+     * it also holds no row touched since the cutoff. That gate is what lets the
+     * attempts statement key off run status alone: it used to close dangling
+     * attempts for any run merely *started* before the cutoff, which stamped
+     * `abandoned` over the in-flight attempts of a healthy long run and then
+     * declared the run interrupted underneath it. It self-healed as each
+     * attempt committed over the stamp, which is why it went unnoticed.
+     *
+     * `run_id IS NOT NULL` inside the subquery is load-bearing rather than
+     * tidy: a single NULL in a `NOT IN` list makes the whole comparison NULL
+     * for every row, so a `running` item claimed before the column existed
+     * would silently switch run reclamation off entirely.
+     *
+     * The items statement is unchanged. `updated_at <= cutoff` was always the
+     * real evidence, which is the same reading applied here to the run.
      */
     async reclaimStale(ageMinutes = 30): Promise<number> {
       const cutoff = new Date(Date.now() - ageMinutes * 60_000)
         .toISOString()
         .replace(/\.\d{3}Z$/, 'Z');
       return tx(db, () => {
+        // The runs statement goes first, so a run this call has just declared
+        // dead has its dangling attempts closed by the next one, in the same
+        // transaction.
+        db.prepare(
+          `UPDATE runs SET status = 'interrupted', finished_at = ?
+           WHERE status = 'running' AND started_at <= ?
+             AND run_id NOT IN (
+               SELECT run_id FROM items
+               WHERE status = 'running' AND run_id IS NOT NULL AND updated_at > ?
+             )`,
+        ).run(utcnow(), cutoff, cutoff);
         db.prepare(
           `UPDATE attempts SET finished_at = ?, outcome = 'failed', error_category = 'abandoned',
              error_message = 'runner ended before recording the attempt result'
-           WHERE outcome IS NULL AND run_id IN (SELECT run_id FROM runs WHERE status != 'running' OR started_at <= ?)`,
-        ).run(utcnow(), cutoff);
-        db.prepare(
-          `UPDATE runs SET status = 'interrupted', finished_at = ? WHERE status = 'running' AND started_at <= ?`,
-        ).run(utcnow(), cutoff);
+           WHERE outcome IS NULL AND run_id IN (SELECT run_id FROM runs WHERE status != 'running')`,
+        ).run(utcnow());
         const cursor = db
           .prepare(
             `UPDATE items SET status = 'pending', run_id = NULL, last_error = 'reclaimed stale running item', updated_at = ?

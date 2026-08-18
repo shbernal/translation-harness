@@ -282,7 +282,9 @@ pass. Collapsing the two would cost both of the guarantees below this line:
 exactly the crash that stranded its rows, and `reclaimStale` would read a job's
 creation time as evidence about a live process and interrupt a healthy one.
 `reclaimStale` therefore closes stale passes and leaves the run alone, which is
-the one place the two halves deliberately differ.
+the one place the two halves deliberately differ. The same argument then applies
+one level further down, to the pass itself: see [a run's age is not evidence
+about its liveness](#a-runs-age-is-not-evidence-about-its-liveness).
 
 ### Schema versions
 
@@ -418,6 +420,28 @@ so a resume skips it silently.
 
 Rows claimed with no `run_id` are deliberately left to `reclaimStale`: they
 predate the column, so there is no run to ask about them.
+
+### A run's age is not evidence about its liveness
+
+Where `reclaimStale` does need its cutoff, it applies it to the **rows**. A run
+is interrupted only when it started before the cutoff *and* holds no row touched
+since it, and a pass is judged the same way against `review_items`. A batch that
+legitimately runs longer than `ageMinutes` is working, and its old `started_at`
+says nothing to the contrary.
+
+Reading the start time alone stamped `abandoned` over the in-flight attempts of
+a healthy long run and then declared the run itself interrupted underneath them.
+It self-healed as each attempt committed over the stamp, so the damage was a
+misreported run rather than a lost one - which is exactly why it survived so
+long.
+
+The liveness gate is what lets the attempts statement key off run status alone,
+so the order inside the transaction is load-bearing: the run is judged first,
+and the attempts statement then reads the status this call has just written.
+One SQL detail is also load-bearing rather than tidy - the `run_id IS NOT NULL`
+inside the subquery. A single NULL in a `NOT IN` list makes the comparison NULL
+for every row, so one `running` item predating the column would switch
+reclamation off entirely.
 
 The reason this is a query and not a schema change is that `tryClaim` takes a run
 id and `items` carries the column. Both went in before there was a caller for

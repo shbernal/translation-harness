@@ -6,6 +6,24 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Fixed
 
+- **`reclaimStale` no longer interrupts a run that is still working.** Both
+  halves closed dangling attempts for every run matching `status != 'running'
+  **OR** `started_at <= cutoff`, and then interrupted any run started before the
+  cutoff. So a batch that legitimately ran longer than `ageMinutes` had its
+  in-flight attempts stamped `abandoned` and the run itself declared
+  `interrupted` while it was working. It self-healed as each attempt committed
+  over the stamp, which is why it went unnoticed.
+
+  A run is now interrupted only when it started before the cutoff *and* holds no
+  row touched since it - its rows are the evidence, not its age - and the
+  attempts statement keys off run status alone. `review_passes` /
+  `review_items` get the identical treatment. The rows statement is unchanged:
+  `updated_at <= cutoff` was always the real evidence, and this is the same
+  reading applied to the run.
+
+  Nothing about the released set changes for a run that really is dead, and
+  `reclaimStale(0)` still means "release everything now".
+
 - **`modalForceShiftsFor` counts every match, not the first.** It counted with
   `s.match(re)?.length`, which on a regex *without* `g` returns a match object
   whose `length` is one plus the number of capture groups rather than a count of
