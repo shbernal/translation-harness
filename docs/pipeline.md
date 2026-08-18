@@ -152,6 +152,19 @@ It still goes through `validateResponse`, so it clears the same structural and
 job-specific guardrails a model answer would. The row records its model as
 `precomputed`, which is what keeps it auditable afterwards.
 
+**An answer the contract refuses fails the row, not the run.** That is the other
+half of being held to the same contract: a model answer refused by
+`validateResponse` fails one row, and so does this one. The difference is that
+there is no retry ladder - `precomputed` is a function of the source, so a
+second call would be refused identically - so the row is failed once, with
+`attemptNumber` 0 and no `attempts` entry, and the batch carries on. The
+`row-settled` event carries `outcome: 'failed'` with `precomputed: true`, so a
+reporter can tell it from a row a provider failed.
+
+Anything other than a `TransientFailure` thrown from `precomputed` is still
+fatal to the run, because that is a bug in the function rather than an answer it
+refused.
+
 Keep the predicate exact: match the whole source value, not a prefix, so a row
 that merely resembles the pattern still reaches the model.
 

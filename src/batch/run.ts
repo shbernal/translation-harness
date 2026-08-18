@@ -138,6 +138,12 @@ export interface AgentBatchOptions<TRow extends ClaimedRow, TOutcome extends str
    *
    * The row skips the inter-row delay when this answers it, because that delay
    * paces a provider conversation and there was none.
+   *
+   * Throwing `TransientFailure` refuses the row, exactly as it does from
+   * `commit` - but with no retry, since this is a function of the row and a
+   * second call would be refused identically. The row is failed with
+   * `attemptNumber: 0` and the batch continues. Anything else thrown is a bug
+   * and is fatal to the run.
    */
   settleWithoutProvider?(row: TRow): Promise<TOutcome | null>;
 
@@ -265,7 +271,36 @@ export async function runAgentBatch<TRow extends ClaimedRow, TOutcome extends st
           // A row the caller can answer itself never reaches a provider, and
           // skips the inter-row delay: that delay paces a provider, and none was
           // called.
-          const without = await options.settleWithoutProvider?.(row);
+          let without: TOutcome | null | undefined;
+          try {
+            without = await options.settleWithoutProvider?.(row);
+          } catch (error) {
+            // A row answered without a provider is held to the same contract a
+            // model answer is, which has to mean the same consequence too: a
+            // refused answer fails its row, not the batch around it. Only a
+            // `TransientFailure` - anything else is a bug and stays fatal.
+            if (!(error instanceof TransientFailure)) throw error;
+            // No retry ladder. `settleWithoutProvider` is a function of the row,
+            // so attempt two would be refused identically; retrying would only
+            // spend the wait. That is also why no attempt was ever started, and
+            // why `attemptNumber` is 0 - the value the field is documented for.
+            await options.fail(row, {
+              reason: `${error.category}: ${error.message}`,
+              attemptNumber: 0,
+              quota: false,
+            });
+            summary.failed++;
+            emit({
+              kind: 'row-settled',
+              identifier: row.identifier,
+              outcome: 'failed',
+              durationSeconds: 0,
+              precomputed: true,
+              completed: settle(),
+              total,
+            });
+            continue;
+          }
           if (without !== null && without !== undefined) {
             settled(without);
             emit({

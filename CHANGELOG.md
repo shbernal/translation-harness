@@ -6,6 +6,28 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Fixed
 
+- **A precomputed answer the contract refuses now fails its row instead of the
+  batch.** `job.precomputed` is documented as being held to the identical
+  contract a model answer faces, and it was, on the way in: the answer goes
+  through `validateResponse` like any other. What did not match was the
+  consequence. `validateResponse` throwing inside `settleWithoutProvider` was
+  not caught inline, so it reached the fatal path and ended the run, while the
+  same refusal of a model answer costs one row. Over a two-row corpus with a
+  `precomputed` answering `{}` for a non-blank field, the run threw and row 2 was
+  never attempted.
+
+  The row is now failed once, with `attemptNumber` 0 and no `attempts` entry,
+  and the batch continues. There is no retry ladder: `precomputed` is a function
+  of the source, so attempt two would be refused identically and the wait would
+  buy nothing. The `row-settled` event carries `outcome: 'failed'` with
+  `precomputed: true`. Anything other than a `TransientFailure` thrown from
+  `precomputed` is still fatal, being a bug rather than a refused answer.
+
+  **This changes what a consumer sees.** A run that used to die now completes
+  with one failed row, so a host that treated the throw as its signal that a
+  precomputed rule was wrong gets a `failed` row and a `row-settled` event
+  instead.
+
 - **An empty proposal no longer blanks the field it was proposed for.**
   ([#1](https://github.com/shbernal/translation-harness/issues/1)) Choosing
   `proposal` on a field where the reviewer emitted `""` wrote the empty string

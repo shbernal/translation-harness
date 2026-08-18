@@ -169,6 +169,58 @@ describe('runTranslation', () => {
       assert.equal(row.model, 'precomputed', 'and the row says so, so it stays auditable');
     });
   });
+
+  // `precomputed` is held to the identical contract a model answer faces, which
+  // has to cut both ways: an answer it refuses fails the row, the way a model
+  // answer refused by the same call fails the row. It used to kill the batch,
+  // so one bad precomputed answer meant every later row was never attempted.
+  test('a precomputed answer the contract refuses fails its row, not the batch', async () => {
+    await withFixture(2, async ({ store, options }) => {
+      const answering: TranslationJob = {
+        ...job,
+        // Answers the first row with nothing for a field the source has, which
+        // is what `validateResponse` refuses. The second row is left to the
+        // provider, so the run has somewhere to go after the failure.
+        precomputed: (source) => (source.name === 'Access control policy number 2' ? {} : null),
+      };
+      const events: RunEvent[] = [];
+      const summary = await runTranslation(store, answering, await store.selectCandidates({}), {
+        ...options,
+        onEvent: (e) => events.push(e),
+      });
+
+      assert.equal(summary.failed, 1);
+      assert.equal(summary.succeeded, 1, 'the row behind it was still attempted');
+      const counts = await store.counts();
+      assert.equal(counts.failed, 1);
+      assert.equal(counts.succeeded, 1);
+      assert.equal(counts.running, 0, 'and nothing is left claimed');
+
+      const run = store.db.prepare('SELECT status FROM runs').get() as { status: string };
+      assert.equal(run.status, 'completed', 'a refused row is not a broken run');
+
+      const failed = store.db
+        .prepare('SELECT last_error, attempt_count FROM items WHERE row_number = 2')
+        .get() as { last_error: string; attempt_count: number };
+      assert.match(failed.last_error, /invalid_shape: Field 'name' needs a non-empty translation/);
+      assert.equal(failed.attempt_count, 0, 'no attempt was ever started, and none is claimed');
+      assert.equal(
+        rowsOf(store, 'SELECT * FROM attempts').length,
+        1,
+        'retrying a pure function of the source would only spend the wait',
+      );
+
+      const settled = events.filter((e) => e.kind === 'row-settled');
+      assert.deepEqual(
+        settled.map((e) => [e.outcome, e.precomputed]),
+        [
+          ['failed', true],
+          ['succeeded', false],
+        ],
+        'the failure is reported as the precomputed row it was',
+      );
+    });
+  });
 });
 
 describe('the worker pool', () => {
