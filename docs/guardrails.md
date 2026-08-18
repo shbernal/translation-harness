@@ -186,3 +186,16 @@ document capitalizes a modal to mark requirement level and is inconsistent about
 it, mirroring the source's case is the correct translation, and comparing
 case-sensitively is what distinguishes a real shift from a faithfully mirrored
 lowercase.
+
+**The global flag is not the table's choice.** A pattern without `g` is counted
+globally anyway. `String.match` on a non-global regex returns a match object
+whose `length` is one plus the capture-group count rather than a count of
+matches, so a table spelled `/shall/i` reported 1 wherever the word occurred at
+all, and a pattern with two groups reported 3 for a single hit - a fabricated
+shift report either way, with nothing saying so.
+
+It is normalized rather than refused. A validator throws inside
+`validateResponse`, and a throw there that is not a `TransientFailure` ends the
+run, which is far too much to charge for a missing flag. `missingReferences` can
+afford to be strict about the same mistake only because `matchAll` refuses a
+non-global pattern on its own behalf.

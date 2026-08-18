@@ -6,6 +6,24 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Fixed
 
+- **`modalForceShiftsFor` counts every match, not the first.** It counted with
+  `s.match(re)?.length`, which on a regex *without* `g` returns a match object
+  whose `length` is one plus the number of capture groups rather than a count of
+  matches. A job passing `/shall/i` got 1 wherever the word occurred at all, and
+  a pattern with two groups got 3 for a single hit. Either way the shift report
+  was fabricated and nothing raised an error. Both `source` and `target` of each
+  level are now normalized to global before counting.
+
+  Its sibling `missingReferences` uses `matchAll`, which throws loudly on the
+  same mistake, so one helper was strict and the other silently wrong.
+  Normalizing rather than throwing is deliberate: a validator throws inside
+  `validateResponse`, and a non-`TransientFailure` throw there ends the run,
+  which is far too much to charge for a missing flag.
+
+  **This changes what gets flagged.** A job currently passing non-global
+  regexes will start seeing real counts, so rows that were quietly reported as
+  matching may newly raise a `modal force differs` review reason.
+
 - **A precomputed answer the contract refuses now fails its row instead of the
   batch.** `job.precomputed` is documented as being held to the identical
   contract a model answer faces, and it was, on the way in: the answer goes

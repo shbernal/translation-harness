@@ -307,6 +307,43 @@ describe('modalForceShiftsFor', () => {
     assert.match(found[0] as string, /SHOULD 1 -> 2/);
   });
 
+  // `String.match` on a regex without `g` returns a match object rather than a
+  // list, and its `length` is 1 plus the capture-group count. So a job spelling
+  // its table `/shall/i` got a fabricated shift report - every level counted 1
+  // wherever the word occurred at all - and nothing said so. The two spellings
+  // have to agree, which is why both are asserted against the same text.
+  test('counts every match, whether or not the table carries the global flag', () => {
+    const source = { description: 'It SHALL be logged. It SHALL be signed. It SHALL be kept.' };
+    const translated = { description: 'Il DOIT être journalisé, signé et conservé.' };
+
+    const withoutFlag: readonly ModalLevel[] = [
+      { level: 'MUST', source: /\bshall\b/i, target: /\b(?:doit|doivent)\b/i },
+    ];
+    const withFlag: readonly ModalLevel[] = [
+      { level: 'MUST', source: /\bshall\b/gi, target: /\b(?:doit|doivent)\b/gi },
+    ];
+
+    const expected = ['modal force differs: MUST 3 -> 1'];
+    assert.deepEqual(modalForceShiftsFor(withoutFlag, ctx(source, translated)), expected);
+    assert.deepEqual(modalForceShiftsFor(withFlag, ctx(source, translated)), expected);
+  });
+
+  // The same mistake in its other guise: a non-global pattern's `length` counts
+  // capture groups, so this once reported 3 matches of a word occurring once.
+  test('a capture group in a non-global pattern does not inflate the count', () => {
+    const twoGroups: readonly ModalLevel[] = [
+      { level: 'MUST', source: /\b(M)(UST)\b/, target: /\b(DOIT|DOIVENT)\b/ },
+    ];
+    assert.deepEqual(
+      modalForceShiftsFor(
+        twoGroups,
+        ctx({ description: 'It MUST be encrypted.' }, { description: 'Il DOIT être chiffré.' }),
+      ),
+      [],
+      'one match each, so there is no shift to report',
+    );
+  });
+
   test('a passthrough field cannot contribute a phantom source modal', () => {
     // `type` is never translated, so it is absent from `translated` and must be
     // excluded from the comparison rather than counted as a dropped MUST.

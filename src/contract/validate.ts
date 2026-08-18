@@ -148,6 +148,23 @@ export interface ModalLevel {
 }
 
 /**
+ * The same pattern, guaranteed to count every match rather than the first.
+ *
+ * `String.match` on a regex without `g` returns a match object, whose `length`
+ * is one plus the number of capture groups - so a level table spelled `/shall/i`
+ * counted 1 wherever the word occurred at all, and a pattern with two groups
+ * counted 3 for a single hit. Silent both ways, which is what makes it worth
+ * normalizing rather than checking.
+ *
+ * Normalized rather than refused. A validator throws inside `validateResponse`,
+ * and a throw there that is not a `TransientFailure` is fatal to the whole run:
+ * far too much to charge for a missing flag. `missingReferences` gets to be
+ * strict about the same mistake only because `matchAll` refuses a non-global
+ * pattern on its own behalf.
+ */
+const asGlobal = (re: RegExp): RegExp => (re.global ? re : new RegExp(re.source, `${re.flags}g`));
+
+/**
  * Helper for a job's validators: normative modal force that did not survive.
  *
  * A requirement is binding because of its modal, and nothing else in the
@@ -168,6 +185,9 @@ export interface ModalLevel {
  * The level table is a parameter, the way `missingReferences` takes its pattern:
  * the four design points above are the mechanism and are shared, while which
  * words mark which level is a judgement about one language pair.
+ *
+ * A level's regexes are counted globally whether or not they carry `g`, so a
+ * table spelled `/shall/i` reports real counts rather than 1.
  */
 export function modalForceShiftsFor(
   levels: readonly ModalLevel[],
@@ -177,7 +197,7 @@ export function modalForceShiftsFor(
   const text = (values: Readonly<Fields>) => keys.map((k) => values[k] ?? '').join('\n');
   const source = text(ctx.source);
   const translated = text(ctx.translated);
-  const count = (s: string, re: RegExp) => s.match(re)?.length ?? 0;
+  const count = (s: string, re: RegExp) => s.match(asGlobal(re))?.length ?? 0;
 
   const shifts = levels
     .map(({ level, source: from, target: to }) => {
