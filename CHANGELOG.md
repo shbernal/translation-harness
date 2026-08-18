@@ -81,6 +81,24 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   reason string will need the new one; nothing in the library selects on it, and
   it is provenance rather than state.
 
+### Removed
+
+- **`QuotaExceeded`.** Exported from `index.ts` and never raised by anything in
+  `src/`. Its own doc comment said "raised by the pipeline, not by a provider",
+  and the pipeline does not raise it: quota handling is entirely
+  `TransientFailure('quota')`, a paused batch, and `BatchFailure.quota`. It was
+  a support obligation with no producer.
+
+  **Use instead:** a caller that wants to know a batch stopped on quota reads
+  `BatchFailure.quota` on the failed row, or listens for the `quota-paused`
+  event; a run that stopped this way finishes with status `paused_quota`. A
+  caller that wants to classify a provider's own message still has
+  `isQuotaError`, which is unchanged.
+
+  The alternative was to keep the class and correct its comment. That is worse:
+  it publishes a name a consumer may reasonably start throwing, and then the
+  library owes it a meaning it was never given.
+
 ## 0.2.1
 
 A framework a termbase plugs into, and a way to read the corpus back.

@@ -50,13 +50,6 @@ export class TransientFailure extends Error {
 }
 
 /**
- * The run cannot continue right now. Raised by the pipeline, not by a provider:
- * a provider reports a `quota` failure for one row, and the runner decides that
- * the batch as a whole is finished for now.
- */
-export class QuotaExceeded extends Error {}
-
-/**
  * Whether a message from an agent CLI means "you have run out of allowance"
  * rather than "that request was bad".
  *

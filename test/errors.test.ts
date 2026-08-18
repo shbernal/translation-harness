@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { isQuotaError, QuotaExceeded, TransientFailure } from '../src/errors.ts';
+import { isQuotaError, TransientFailure } from '../src/errors.ts';
 
 describe('TransientFailure', () => {
   test('carries the category and the exit code the caller has to act on', () => {
@@ -18,14 +18,6 @@ describe('TransientFailure', () => {
 
   test('an exit code is optional, because not every failure has a process', () => {
     assert.equal(new TransientFailure('invalid_shape', 'missing field').exitCode, null);
-  });
-});
-
-describe('QuotaExceeded', () => {
-  test('is an Error, and is about the run rather than about one row', () => {
-    const error = new QuotaExceeded('allowance gone');
-    assert.ok(error instanceof Error);
-    assert.equal(error.message, 'allowance gone');
   });
 });
 

@@ -48,7 +48,7 @@ export {
 } from './contract/validate.ts';
 // Failures. `TransientFailure` is what a custom provider raises; the categories
 // are what the runner decides on.
-export { type FailureCategory, isQuotaError, QuotaExceeded, TransientFailure } from './errors.ts';
+export { type FailureCategory, isQuotaError, TransientFailure } from './errors.ts';
 // The termbase framework: entries, the matcher seam, and the digest both
 // lifecycles record. No term lists, no folding tables, no determiners - which
 // words are canonical is the host's judgement and stays there.
