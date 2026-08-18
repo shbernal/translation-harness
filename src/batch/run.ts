@@ -401,16 +401,28 @@ export async function runAgentBatch<TRow extends ClaimedRow, TOutcome extends st
               total,
             });
           }
+        } catch (error) {
+          // Same shape as the provider-loop catch above, and here for the same
+          // reason the `finally` below is the problem: a catch runs before its
+          // own finally, so the row is still in `inFlight` when it is
+          // snapshotted. Caught in the worker's outer catch instead - which is
+          // where this used to land - the `finally` had already removed it, so
+          // `owned` came back empty and the row that caused the fatal error was
+          // the one row the fatal path did not fail.
+          stop.fatal ??= { error, owned: [...inFlight] };
+          return;
         } finally {
           inFlight.delete(row.rowNumber);
         }
         if (cursor < total && options.delaySeconds) await sleep(options.delaySeconds * 1000);
       }
     } catch (error) {
-      // Nothing above is expected to reach here (the provider path is handled
-      // inline), but a worker that rejected would leave the pool half-drained
-      // and `Promise.all` would abandon the rest. Funnel it into the same
-      // channel.
+      // What is left after the row body catches its own: a throw from outside
+      // any row, which in practice means `store.tryClaim`. Nothing is claimed
+      // at that point, so an empty `owned` is the truth here rather than the
+      // accident it was when this caught the row body too. It stays because a
+      // worker that rejected would leave the pool half-drained and
+      // `Promise.all` would abandon the rest.
       stop.fatal ??= { error, owned: [...inFlight] };
     }
   };

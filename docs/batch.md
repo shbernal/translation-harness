@@ -71,6 +71,10 @@ fails the attempt and the row is retried, through the same ladder a provider
 timeout goes through, so validation needs no second concept. Anything else thrown
 from a callback is treated as a bug: the pool drains, the rows *this run owned*
 are recorded failed through `recordInternalError`, and the error is rethrown.
+The row whose callback threw is one of them, which is worth saying because it is
+the row a reader looks for first and the easiest one to lose: the snapshot of
+what the run owned has to be taken in the catch that sees the failure, since the
+`finally` releasing the row runs before any catch further out.
 
 `settleWithoutProvider` is the escape for a row the caller can answer itself. It
 commits the row and returns its label, or returns `null` to send the row to the

@@ -402,4 +402,36 @@ describe('runAgentBatch', () => {
       assert.equal(store.claimedCount(), 0, 'nothing is left claimed');
     });
   });
+
+  // The invariant AGENTS.md names as the one an agent breaks first, arrived at
+  // from the other end: not a row missing from the run's own list, but a row
+  // present in it that the fatal path returns before sweeping. A fatal error
+  // used to be snapshotted from the worker's outer catch, which runs after the
+  // row body's `finally` has already removed the row from `inFlight`, so the
+  // one row guaranteed to be affected was the one row left `running`.
+  test('a fatal error fails the row that caused it', async () => {
+    await withBatch(2, async ({ store, options }) => {
+      const boom = new Error('the store fell over');
+      await assert.rejects(
+        runAgentBatch<Ticket, Verdict>({
+          ...options,
+          concurrency: 1,
+          settleWithoutProvider: async (ticket) => {
+            if (ticket.rowNumber === 1) throw boom;
+            return null;
+          },
+        }),
+        (error: unknown) => error === boom,
+        'a throw that is not a TransientFailure is a bug, and stops the run',
+      );
+
+      assert.equal(
+        store.rows.get(1)?.state,
+        'failed',
+        'the offending row is failed, not left open',
+      );
+      assert.equal(store.claimedCount(), 0, 'and no row is left claimed');
+      assert.equal(store.runs.get(options.runId), 'failed');
+    });
+  });
 });
