@@ -209,6 +209,24 @@ registerProvider(ANSWER_PROVIDER, async ({ prompt, responsePath }) => {
   return { value, stdout: 'provider said something\n', stderr: '', exitCode: 0, duration: 0.25 };
 });
 
+/** The same, with both streams non-empty, so losing one is visible. */
+const NOISY_PROVIDER = 'batch-test-noisy';
+const NOISY_STDOUT = 'REAL STDOUT FROM THE PROVIDER\n';
+const NOISY_STDERR = 'REAL STDERR FROM THE PROVIDER\n';
+
+registerProvider(NOISY_PROVIDER, async ({ prompt, responsePath }) => {
+  const value = { answer: `re: ${prompt}` };
+  mkdirSync(dirname(responsePath), { recursive: true });
+  writeFileSync(responsePath, `${JSON.stringify(value)}\n`, 'utf8');
+  return {
+    value,
+    stdout: NOISY_STDOUT,
+    stderr: NOISY_STDERR,
+    exitCode: 0,
+    duration: 0.25,
+  };
+});
+
 interface Fixture {
   store: MemoryStore;
   options: AgentBatchOptions<Ticket, Verdict>;
@@ -305,6 +323,43 @@ describe('runAgentBatch', () => {
         events.map((e) => e.kind),
         ['row-retrying', 'row-settled'],
       );
+    });
+  });
+
+  // The evidence a refused attempt leaves is the evidence somebody opens. The
+  // placeholder writes that keep the recorded paths pointing at real files used
+  // to happen on the way out of a `TransientFailure`, which meant they landed
+  // on top of what the provider had actually said, on every failing attempt.
+  test('a refused answer keeps the output that produced it', async () => {
+    await withBatch(1, async ({ store, options }) => {
+      let seen = 0;
+      await runAgentBatch<Ticket, Verdict>({
+        ...options,
+        provider: NOISY_PROVIDER,
+        maxAttempts: 2,
+        commit: async (ticket) => {
+          seen++;
+          if (seen === 1) throw new TransientFailure('invalid_shape', 'not what I asked for');
+          store.settleRow(ticket.rowNumber);
+          return 'answered';
+        },
+      });
+
+      assert.equal(store.attempts.size, 2, 'the row was refused once and settled once');
+      for (const attempt of store.attempts.values()) {
+        const paths = attempt.paths;
+        assert.ok(paths, 'every attempt records where its evidence went');
+        assert.equal(
+          readFileSync(paths.stdoutPath, 'utf8'),
+          NOISY_STDOUT,
+          'the refused attempt keeps its stdout',
+        );
+        assert.equal(
+          readFileSync(paths.stderrPath, 'utf8'),
+          NOISY_STDERR,
+          'the refused attempt keeps its stderr',
+        );
+      }
     });
   });
 

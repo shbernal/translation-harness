@@ -172,3 +172,11 @@ commit.
 The store allocates the attempt number, and the file names embed it, so paths
 are recorded in a second write. Between the two the attempt row has null paths,
 which is honest: the files do not exist yet either.
+
+**A refused answer keeps its evidence**, which is the case a reader wants it
+for. Validation refusing an answer is a `TransientFailure`, the same channel a
+timeout uses, and the attempt that produced it keeps the provider's stdout and
+stderr alongside the `.response.json` it was judging. The two log files are
+created empty as soon as their paths are recorded, so an attempt that dies
+before the provider answers still resolves to files somebody can open; they are
+never written empty afterwards.

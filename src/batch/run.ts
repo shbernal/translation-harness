@@ -302,6 +302,16 @@ export async function runAgentBatch<TRow extends ClaimedRow, TOutcome extends st
             await store.setAttemptPaths(attemptId, { responsePath, stdoutPath, stderrPath });
 
             try {
+              // Placeholders, so the paths just recorded always point at files
+              // that exist - an attempt that dies before the provider answers
+              // still resolves to something a reader can open. They go first,
+              // before the call rather than after a failure, because written
+              // afterwards they overwrite the provider's real output on exactly
+              // the attempts somebody opens these files to read. Inside the try
+              // rather than above it so a failing write takes the paths already
+              // here rather than escaping to the worker catch.
+              writeFileSync(stdoutPath, '', 'utf8');
+              writeFileSync(stderrPath, '', 'utf8');
               const result = await invokeProvider({
                 prompt,
                 responsePath,
@@ -339,8 +349,6 @@ export async function runAgentBatch<TRow extends ClaimedRow, TOutcome extends st
                 return;
               }
               finalError = `${error.category}: ${error.message}`;
-              writeFileSync(stdoutPath, '', 'utf8');
-              writeFileSync(stderrPath, '', 'utf8');
               await store.failAttempt(attemptId, error);
               if (error.category === 'quota') {
                 await options.fail(row, {
