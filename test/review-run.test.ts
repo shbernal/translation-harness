@@ -340,6 +340,42 @@ describe('how a pass ends', () => {
     });
   });
 
+  // The review half's version of the redo case, and the worse of the two. A
+  // redo pass claims rows that already hold a verdict; before `claimed_from`,
+  // releasing one sent it to `pending`, which additionally left the *run*
+  // unable to report itself finished, because a run is finished when nothing is
+  // pending and these rows had just become pending again.
+  //
+  // Killed rather than aborted: an abort lets in-flight rows commit, so the
+  // final sweep finds nothing. It is the hard stop that leaves rows claimed.
+  test('a killed redo pass gives its rows back with their verdicts', async () => {
+    await withRun(async ({ review, job, options }) => {
+      await runReview(review, job, await review.selectCandidates({}), options);
+      const before = await review.counts();
+      assert.equal(before.pending, 0, 'the run is judged');
+      assert.equal(before.pass, 4);
+
+      const candidates = await review.selectCandidates({ redo: true });
+      assert.equal(candidates.length, 4, 'a redo widens to rows that already hold a verdict');
+      await review.startRun({ runId: 'redo-pass', model: 'mock:reviewer', options: {} });
+      for (const row of candidates.slice(0, 3)) await review.tryClaim(row.rowNumber, 'redo-pass');
+      assert.equal((await review.counts()).running, 3, 'three rows are claimed');
+
+      await review.finishRun('redo-pass', 'interrupted');
+      assert.equal(await review.releaseSettledRunClaims(), 3, 'the dead pass gives up its rows');
+
+      const after = await review.counts();
+      assert.equal(after.running, 0, 'nothing is left claimed');
+      assert.equal(after.pending, 0, 'and no judged row came back asking to be judged again');
+      assert.deepEqual(after, before, 'the corpus reports exactly the statuses it had');
+      assert.equal(
+        (await review.selectCandidates({})).length,
+        0,
+        'so an ordinary resume finds nothing to do and spends nothing',
+      );
+    });
+  });
+
   // `completed` means no row is still waiting, not that every row got a verdict.
   // A failed row is a recorded answer a human can see and act on, and
   // `retryFailed` is how they act on it; a run one stubborn row could block

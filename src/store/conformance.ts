@@ -87,6 +87,26 @@ export function storeConformance(make: StoreFactory): ConformanceCase[] {
         store,
         rows: Array.from({ length: rowCount }, (_, i) => i + 1),
         claimed: async () => (await store.counts()).running,
+        // Term 10 needs a row holding an answer, which is what a redo pass
+        // claims. `commitPrecomputed` is the shortest honest way to make one:
+        // it settles a row in one transaction without inventing an attempt.
+        settle: async (rowNumber: number) => {
+          await store.tryClaim(rowNumber, 'seed-run');
+          await store.commitPrecomputed({
+            rowNumber,
+            outcome: 'succeeded',
+            translations: { name: 'settled' },
+            warnings: [],
+            reviewReasons: [],
+            promptHash: 'seed',
+          });
+          return 'succeeded';
+        },
+        stateOf: async (rowNumber: number) => {
+          const row = (await store.items()).find((i) => i.rowNumber === rowNumber);
+          if (!row) throw new Error(`store conformance: row ${rowNumber} is missing`);
+          return row.status;
+        },
       };
     }),
     {

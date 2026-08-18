@@ -187,11 +187,11 @@ SQLite behind a worker thread. Those are exactly the consumers the seam exists
 for, and it is the direction that cannot be widened later without breaking
 everyone.
 
-### The nine contract terms
+### The ten contract terms
 
 Signatures do not tell an implementer what to guarantee. These do, and
-`storeConformance` checks every one. **Terms 1 to 5 are `BatchStore`'s, 6 and 9 are
-`TranslationStore`'s, and 7 and 8 are `ReviewStore`'s.** The 1-to-5 line is exactly
+`storeConformance` checks every one. **Terms 1 to 5 and 10 are `BatchStore`'s, 6
+and 9 are `TranslationStore`'s, and 7 and 8 are `ReviewStore`'s.** The 1-to-5 line is exactly
 where the seam was split: five of the terms a translation store owes were never
 about translation.
 
@@ -224,11 +224,25 @@ comment in `src/` or `test/` goes quietly stale.
    supplied records.** This is the guard that turns silent corpus drift into an
    error. Without it a shrinking corpus quietly orphans finished work.
 
+And one more on `BatchStore`, added after the three below and so numbered last
+even though it belongs with the five above:
+
+10. **A released row returns to the status it held before it was claimed.** All
+    three release paths - `unclaim`, `reclaimStale` and `releaseSettledRunClaims`
+    - owe this, so all three are checked. A redo pass claims rows that already
+    hold an answer; releasing one to `pending` means a killed redo turns accepted
+    work into rows the next ordinary run re-answers and re-pays for. Nothing is
+    lost when that happens, which is what makes it worth a term: the answer is
+    still in the row, so there is no failure anywhere to notice.
+
 `BatchStore` deliberately has no way to create a row and no way to count a claim,
 because both are lifecycle knowledge. That makes the generic suite unable to set
-itself up, so `batchConformance` asks the host for exactly those two capabilities
-and nothing else. Widening the base interface to make its own tests easier would
-have made the base interface a lie.
+itself up, so `batchConformance` asks the host for those capabilities and nothing
+else: creating rows, counting claims, and - for term 10 - settling one row and
+reading a row's state back, since a claim can only be shown to remember what it
+displaced if there is something other than `pending` for it to have displaced.
+Widening the base interface to make its own tests easier would have made the base
+interface a lie.
 
 Two more terms belong to `ReviewStore`, numbered on from these rather than
 restarting, because five of the terms above are shared with it and two numbering
@@ -308,6 +322,26 @@ The review half's refusal fires later than the translate one, at
 `.review(runId)` rather than at the open. That is deliberate. A file whose review
 half is old still opens, still translates and still reports; only the code that
 would misread the old review tables is stopped.
+
+**Version 2** adds `claimed_from` to `items` and to `review_items`: the status a
+claim displaced, null whenever the row is not claimed. It is what contract term
+10 rests on, and it is a column rather than an inference on purpose.
+`review_reasons_json` plus `target_json` plus `last_error` *almost* distinguish
+the five statuses, and "almost" is the problem - a row seeded as already
+succeeded has a target and no reasons, which is a fourth shape - so inferring it
+would be a rule nobody can state in one line. A column can be.
+
+Both halves went to 2 in the same release, which is the first change to exercise
+the two-stamps rule on both at once: two versions, two plans, two steps, migrated
+separately. A host that has never reviewed still migrates only the translate
+half.
+
+The step is additive - `ALTER TABLE ... ADD COLUMN claimed_from TEXT` - so
+neither plan needed a `refuse`: there is no existing data a new nullable column
+can contradict. A row already sitting `running` when the migration runs has no
+recorded prior status and keeps the old behaviour, being released to `pending`.
+That is the truth about it rather than a guess, and the alternative would put a
+fabricated value in the one column the step exists to make trustworthy.
 
 ### Migration
 

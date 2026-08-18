@@ -38,6 +38,8 @@ interface MemoryRow {
   claimedBy: string | null;
   claimedAt: number;
   state: 'open' | 'settled' | 'failed';
+  /** Contract term 10: the state a claim displaced, null when unclaimed. */
+  claimedFrom: MemoryRow['state'] | null;
 }
 
 interface MemoryStore extends BatchStore<Ticket> {
@@ -68,6 +70,7 @@ function memoryStore(count: number): MemoryStore {
       claimedBy: null,
       claimedAt: 0,
       state: 'open',
+      claimedFrom: null,
     });
   }
   const attempts = new Map<number, { rowNumber: number; failed: boolean; paths?: AttemptPaths }>();
@@ -79,7 +82,11 @@ function memoryStore(count: number): MemoryStore {
   const release = (row: MemoryRow, state: MemoryRow['state']): void => {
     row.claimedBy = null;
     row.state = state;
+    row.claimedFrom = null;
   };
+
+  /** The three release paths, which all owe term 10 the same answer. */
+  const restore = (row: MemoryRow): void => release(row, row.claimedFrom ?? 'open');
 
   return {
     rows,
@@ -99,7 +106,12 @@ function memoryStore(count: number): MemoryStore {
 
     async tryClaim(rowNumber, runId) {
       const row = rows.get(rowNumber);
-      if (!row || row.claimedBy !== null || row.state !== 'open') return null;
+      // Claimed or not claimed is the whole test, as it is in the shipped
+      // store, where the guard is `status != 'running'`. Refusing a settled row
+      // as well would be stricter than the contract and would make a redo pass
+      // - which claims rows that already hold an answer - impossible here.
+      if (!row || row.claimedBy !== null) return null;
+      row.claimedFrom = row.state;
       row.claimedBy = runId;
       row.claimedAt = Date.now();
       return row.ticket;
@@ -110,7 +122,7 @@ function memoryStore(count: number): MemoryStore {
       for (const rowNumber of rowNumbers) {
         const row = rows.get(rowNumber);
         if (row?.claimedBy) {
-          release(row, 'open');
+          restore(row);
           released++;
         }
       }
@@ -122,7 +134,7 @@ function memoryStore(count: number): MemoryStore {
       let released = 0;
       for (const row of rows.values()) {
         if (row.claimedBy && row.claimedAt <= cutoff) {
-          release(row, 'open');
+          restore(row);
           released++;
         }
       }
@@ -136,7 +148,7 @@ function memoryStore(count: number): MemoryStore {
         // nothing to ask about it, so it stays `reclaimStale`'s problem.
         const status = row.claimedBy === null ? undefined : runs.get(row.claimedBy);
         if (status !== undefined && status !== 'running') {
-          release(row, 'open');
+          restore(row);
           released++;
         }
       }
@@ -192,6 +204,15 @@ describe('a Map satisfies the BatchStore contract', () => {
       store,
       rows: [...store.rows.keys()],
       claimed: async () => store.claimedCount(),
+      settle: async (rowNumber: number) => {
+        store.settleRow(rowNumber);
+        return 'settled';
+      },
+      stateOf: async (rowNumber: number) => {
+        const row = store.rows.get(rowNumber);
+        if (!row) throw new Error(`row ${rowNumber} is missing`);
+        return row.state;
+      },
     };
   })) {
     test(name, run);

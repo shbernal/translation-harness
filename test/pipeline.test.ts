@@ -301,6 +301,49 @@ describe('the worker pool', () => {
     });
   });
 
+  // The case the `claimed_from` column exists for. A redo pass claims rows that
+  // already hold accepted translations; before the column, releasing one sent it
+  // to `pending`, so a kill mid-redo turned accepted work into rows the next
+  // ordinary run re-translates and re-pays for. `target_json` survived either
+  // way, so nothing was lost and nothing said anything either.
+  //
+  // Killed rather than aborted, deliberately. An abort stops workers pulling new
+  // rows and lets the ones in flight commit, so the final sweep finds nothing -
+  // it is the *hard* stop that leaves rows claimed, which is why the release
+  // paths exist at all. So the claim is made and then abandoned, which is what a
+  // dead process leaves behind.
+  test('a killed redo pass gives its rows back as succeeded, not as pending', async () => {
+    await withFixture(20, async ({ store, options }) => {
+      await runTranslation(store, job, await store.selectCandidates({}), options);
+      assert.equal(countWhere(store, "status = 'succeeded'"), 20, 'the corpus is translated');
+
+      const candidates = await store.selectCandidates({ redo: true });
+      assert.equal(candidates.length, 20, 'a redo widens to rows that already have an answer');
+      await store.startRun({ runId: 'redo', model: 'mock:config-default', options: {} });
+      for (const row of candidates.slice(0, 5)) await store.tryClaim(row.rowNumber, 'redo');
+      assert.equal(countWhere(store, "status = 'running'"), 5, 'five rows are claimed');
+
+      // What a host does on the next start, having found a run that never
+      // finished. Either release path answers this; the conformance term covers
+      // all three, so this takes the one a resume actually reaches first.
+      await store.finishRun('redo', 'interrupted');
+      assert.equal(await store.releaseSettledRunClaims(), 5, 'the dead run gives up its rows');
+
+      assert.equal(countWhere(store, "status = 'running'"), 0, 'nothing is left claimed');
+      assert.equal(
+        countWhere(store, "status = 'pending'"),
+        0,
+        'and no row that held an accepted translation came back asking to be translated again',
+      );
+      assert.equal(countWhere(store, "status = 'succeeded'"), 20);
+      assert.equal(
+        (await store.selectCandidates({})).length,
+        0,
+        'so an ordinary resume finds nothing to do and spends nothing',
+      );
+    });
+  });
+
   test('a signal already aborted stops the run before it claims anything', async () => {
     await withFixture(5, async ({ store, options }) => {
       const summary = await runTranslation(store, job, await store.selectCandidates({}), {

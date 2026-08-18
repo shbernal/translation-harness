@@ -59,10 +59,41 @@ describe('ReviewStore is a BatchStore', () => {
   // translate side: `createRun` makes the rows and `counts` counts the claims.
   for (const { name, run } of batchConformance(async (rowCount) => {
     const [, review] = await seeded(rowCount);
+    // A pass for `settle` to answer rows under. `review_attempts.pass_id`
+    // references `review_passes`, so a verdict cannot be recorded under a pass
+    // that was never opened.
+    await review.startRun({ runId: 'seed-pass', model: 'test:model', options: {} });
+    await review.setRunStatus('running');
     return {
       store: review,
       rows: Array.from({ length: rowCount }, (_, i) => i + 1),
       claimed: async () => (await review.counts()).running,
+      // Term 10's redo case, in the review half's own vocabulary: a `pass` row
+      // is exactly what a redo pass claims, and losing it to `pending` is worse
+      // here than on the translate side, because the run's own status falls
+      // back to running once `counts.pending` is no longer zero.
+      settle: async (rowNumber: number) => {
+        await review.tryClaim(rowNumber, 'seed-pass');
+        const { attemptId } = await review.startAttempt({ runId: 'seed-pass', rowNumber });
+        await review.commitVerdict({
+          attemptId,
+          duration: 0,
+          exitCode: 0,
+          rowNumber,
+          verdict: 'pass',
+          severity: null,
+          confidence: null,
+          proposals: {},
+          issues: [],
+          attemptNumber: 1,
+        });
+        return 'pass';
+      },
+      stateOf: async (rowNumber: number) => {
+        const row = (await review.snapshot()).find((i) => i.rowNumber === rowNumber);
+        if (!row) throw new Error(`row ${rowNumber} is missing from the snapshot`);
+        return row.outcome;
+      },
     };
   })) {
     test(name, run);

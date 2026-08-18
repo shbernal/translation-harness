@@ -160,19 +160,25 @@ describe('registryNeedsMigration', () => {
     }
   });
 
-  test('a version 0 registry needs one step, and says which', () => {
+  test('a version 0 registry needs every step to here, and says which', () => {
     withTempDir((dir) => {
       const path = join(dir, 'old.sqlite');
       writeV0Registry(path);
       assert.equal(registryNeedsMigration(path), true);
 
+      // One entry per version between what the file is and what this library
+      // writes, in order, so a reader of `pendingMigrations` sees the ladder
+      // rather than only its top rung.
       const pending = pendingMigrations(path);
-      assert.equal(pending.length, 1);
       assert.deepEqual(
-        { plan: pending[0]?.plan, from: pending[0]?.from, to: pending[0]?.to },
-        { plan: 'registry', from: 0, to: 1 },
+        pending.map((p) => ({ plan: p.plan, from: p.from, to: p.to })),
+        [
+          { plan: 'registry', from: 0, to: 1 },
+          { plan: 'registry', from: 1, to: 2 },
+        ],
       );
       assert.match(pending[0]?.summary ?? '', /attempt numbers unique/);
+      assert.match(pending[1]?.summary ?? '', /before it was claimed/);
       assert.equal(userVersion(path), 0, 'asking must not have changed anything');
     });
   });
@@ -186,12 +192,12 @@ describe('migrateRegistry', () => {
 
       // The refusal is the reason this function exists, so assert it here rather
       // than trusting it from elsewhere.
-      assert.throws(() => sqliteStore(path), /schema version 0.*writes version 1/s);
+      assert.throws(() => sqliteStore(path), /schema version 0.*writes version 2/s);
       migrateRegistry(path);
 
       const store = sqliteStore(path);
       try {
-        assert.equal(userVersion(path), 1);
+        assert.equal(userVersion(path), 2);
       } finally {
         void store.close();
       }
@@ -280,7 +286,7 @@ describe('migrateRegistry', () => {
       writeV0Registry(path);
       migrateRegistry(path);
       const again = migrateRegistry(path);
-      assert.deepEqual(again, { kind: 'current', versions: { registry: 1 } });
+      assert.deepEqual(again, { kind: 'current', versions: { registry: 2 } });
     });
   });
 
@@ -315,7 +321,7 @@ describe('migrateRegistry', () => {
       db.exec('PRAGMA user_version = 99');
       db.close();
 
-      assert.throws(() => migrateRegistry(path), /newer than the 1.*Upgrade the package/s);
+      assert.throws(() => migrateRegistry(path), /newer than the 2.*Upgrade the package/s);
     });
   });
 
@@ -581,13 +587,13 @@ describe('the review half of the schema', () => {
       const plans = [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS];
       assert.deepEqual(
         pendingMigrations(path, { plans }).map((s) => `${s.plan} ${s.from}->${s.to}`),
-        ['registry 0->1', 'review 0->1'],
+        ['registry 0->1', 'registry 1->2', 'review 0->1', 'review 1->2'],
       );
 
       const result = migrateRegistry(path, { plans });
       assert.equal(result.kind, 'migrated');
-      assert.deepEqual(result.kind === 'migrated' && result.versions, { registry: 1, review: 1 });
-      assert.equal(reviewVersion(path), 1);
+      assert.deepEqual(result.kind === 'migrated' && result.versions, { registry: 2, review: 2 });
+      assert.equal(reviewVersion(path), 2);
 
       // The point of the step: the file opens through the library afterwards and
       // the run that cost real model calls is all still in it.
@@ -666,6 +672,94 @@ describe('the review half of the schema', () => {
         /review half.*schema version 0.*REVIEW_MIGRATIONS/s,
       );
       store.db.close();
+    });
+  });
+});
+
+// Version 1 to version 2, for each half: an additive column that records what a
+// claim displaced.
+//
+// The v1 fixture is produced by running the library's own ladder as far as
+// version 1, rather than by writing v1's DDL out again. That is not the shortcut
+// this file's header warns about - deriving the *old* schema from the current
+// one minus a column would test the subtraction - because a v1 file in the wild
+// is exactly what the v1 step produced, so this is the artefact itself.
+describe('claimed_from arrives as version 2, in both halves', () => {
+  /** The same plan, stopped at `to`. */
+  const upTo = (plan: MigrationPlan, to: number): MigrationPlan => ({
+    ...plan,
+    target: to,
+    steps: plan.steps.filter((step) => step.to <= to),
+  });
+
+  test('the translate half migrates, and a released row keeps what it was', async () => {
+    await withTempDirAsync(async (dir) => {
+      const path = join(dir, 'v1.sqlite');
+      writeV0Registry(path);
+      migrateRegistry(path, { plans: [upTo(REGISTRY_MIGRATIONS, 1)], backup: false });
+      assert.equal(userVersion(path), 1, 'the fixture really is a version 1 file');
+
+      assert.deepEqual(
+        pendingMigrations(path).map((step) => `${step.plan} ${step.from}->${step.to}`),
+        ['registry 1->2'],
+      );
+      const result = migrateRegistry(path, { backup: false });
+      assert.equal(result.kind, 'migrated');
+      assert.equal(userVersion(path), 2);
+
+      const store = sqliteStore(path);
+      try {
+        // Row 1 was `succeeded` before the migration and is still succeeded
+        // after it - and now survives being claimed and released, which is the
+        // behaviour the column was added for.
+        await store.startRun({ runId: 'redo', model: 'test:model', options: {} });
+        assert.ok(await store.tryClaim(1, 'redo'), 'a settled row is claimable');
+        await store.unclaim([1]);
+        const rows = await store.items();
+        assert.equal(rows.find((r) => r.rowNumber === 1)?.status, 'succeeded');
+        assert.equal(
+          rows.find((r) => r.rowNumber === 2)?.status,
+          'pending',
+          'and row 2 is as it was',
+        );
+      } finally {
+        await store.close();
+      }
+    });
+  });
+
+  test('the review half migrates, and a released row keeps its verdict', async () => {
+    await withTempDirAsync(async (dir) => {
+      const path = join(dir, 'v1-review.sqlite');
+      writeV0Registry(path);
+      writeV0ReviewHalf(path);
+      migrateRegistry(path, {
+        plans: [upTo(REGISTRY_MIGRATIONS, 1), upTo(REVIEW_MIGRATIONS, 1)],
+        backup: false,
+      });
+      assert.equal(reviewVersion(path), 1, 'the fixture really is a version 1 review half');
+
+      migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS], backup: false });
+      assert.equal(reviewVersion(path), 2);
+
+      const store = sqliteStore(path);
+      try {
+        const review = store.review(OLD_RUN);
+        const before = (await review.snapshot())[0];
+        assert.ok(before, 'the migrated run still has its rows');
+        assert.notEqual(before.outcome, 'pending', 'and the row carries a real verdict');
+
+        await review.startRun({ runId: 'redo-pass', model: 'test:model', options: {} });
+        assert.ok(
+          await review.tryClaim(before.rowNumber, 'redo-pass'),
+          'a judged row is claimable',
+        );
+        await review.unclaim([before.rowNumber]);
+        const after = (await review.snapshot()).find((r) => r.rowNumber === before.rowNumber);
+        assert.equal(after?.outcome, before.outcome, 'and comes back holding the same verdict');
+      } finally {
+        await store.close();
+      }
     });
   });
 });

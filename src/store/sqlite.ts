@@ -43,7 +43,7 @@ import { STATUSES } from './types.ts';
  * failure it prevents. `migrateRegistry` in `migrate.ts` is the other half, and
  * it is invoked by the host rather than by the open.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** `items.model` for a row the caller answered without a provider. */
 export const PRECOMPUTED_MODEL_LABEL = 'precomputed';
@@ -72,6 +72,9 @@ CREATE TABLE IF NOT EXISTS items (
   attempt_count INTEGER NOT NULL DEFAULT 0,
   last_error TEXT,
   run_id TEXT,
+  -- The status tryClaim displaced, so a released row goes back to what it was
+  -- rather than to 'pending'. Null whenever the row is not claimed.
+  claimed_from TEXT,
   updated_at TEXT NOT NULL
 );
 
@@ -358,12 +361,19 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
      * file, cannot both come away believing they own the row. An unconditional
      * claim would let both translate it, both write an answer, and the second
      * silently overwrite the first.
+     *
+     * `claimed_from = status` records what the claim displaced (contract term
+     * 10), and it has to ride in this same statement rather than in a read
+     * before it - a second statement would be a second chance for the row to
+     * move, and the term above is the one thing here that may not have one.
+     * SQLite evaluates every `SET` expression against the row as it was, so
+     * assigning `status` alongside does not disturb it.
      */
     async tryClaim(rowNumber: number, runId: string): Promise<Item | null> {
       const changed = tx(db, () => {
         const cursor = db
           .prepare(
-            `UPDATE items SET status = 'running', run_id = ?, updated_at = ?
+            `UPDATE items SET claimed_from = status, status = 'running', run_id = ?, updated_at = ?
              WHERE row_number = ? AND status != 'running'`,
           )
           .run(runId, utcnow(), rowNumber);
@@ -388,7 +398,8 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
       return tx(db, () => {
         const cursor = db
           .prepare(
-            `UPDATE items SET status = 'pending', run_id = NULL, updated_at = ?
+            `UPDATE items SET status = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    run_id = NULL, updated_at = ?
              WHERE status = 'running' AND row_number IN (${rowNumbers.map(() => '?').join(',')})`,
           )
           .run(utcnow(), ...rowNumbers);
@@ -447,7 +458,8 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         ).run(utcnow());
         const cursor = db
           .prepare(
-            `UPDATE items SET status = 'pending', run_id = NULL, last_error = 'reclaimed stale running item', updated_at = ?
+            `UPDATE items SET status = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    run_id = NULL, last_error = 'reclaimed stale running item', updated_at = ?
              WHERE status = 'running' AND updated_at <= ?`,
           )
           .run(utcnow(), cutoff);
@@ -475,7 +487,8 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         ).run(utcnow());
         const cursor = db
           .prepare(
-            `UPDATE items SET status = 'pending', run_id = NULL,
+            `UPDATE items SET status = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    run_id = NULL,
                     last_error = 'released: the run holding this row had already ended', updated_at = ?
              WHERE status = 'running' AND run_id IS NOT NULL
                AND run_id IN (SELECT run_id FROM runs WHERE status != 'running')`,
@@ -542,7 +555,8 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         ).run(utcnow(), a.duration, a.outcome, a.exitCode, a.attemptId);
         db.prepare(
           `UPDATE items SET status = ?, target_json = ?, warnings_json = ?, review_reasons_json = ?,
-             prompt_hash = ?, model = ?, attempt_count = ?, last_error = NULL, run_id = NULL, updated_at = ?
+             prompt_hash = ?, model = ?, attempt_count = ?, last_error = NULL, run_id = NULL,
+             claimed_from = NULL, updated_at = ?
            WHERE row_number = ?`,
         ).run(
           a.outcome,
@@ -570,7 +584,8 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         db
           .prepare(
             `UPDATE items SET status = ?, target_json = ?, warnings_json = ?, review_reasons_json = ?,
-               prompt_hash = ?, model = ?, last_error = NULL, run_id = NULL, updated_at = ?
+               prompt_hash = ?, model = ?, last_error = NULL, run_id = NULL, claimed_from = NULL,
+               updated_at = ?
              WHERE row_number = ?`,
           )
           .run(
@@ -602,7 +617,7 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         db
           .prepare(
             `UPDATE items SET status = 'failed', attempt_count = ?, last_error = ?, prompt_hash = ?,
-               model = ?, run_id = NULL, updated_at = ?
+               model = ?, run_id = NULL, claimed_from = NULL, updated_at = ?
              WHERE row_number = ?`,
           )
           .run(a.attemptCount, a.lastError, a.promptHash, a.modelLabel, utcnow(), a.rowNumber),
@@ -624,7 +639,7 @@ export function sqliteStore(path: string, options: SqliteStoreOptions = {}): Sql
         ).run(utcnow(), message, runId);
         if (!inFlight.length) return;
         db.prepare(
-          `UPDATE items SET status = 'failed', last_error = ?, updated_at = ?
+          `UPDATE items SET status = 'failed', last_error = ?, claimed_from = NULL, updated_at = ?
            WHERE status = 'running' AND row_number IN (${inFlight.map(() => '?').join(',')})`,
         ).run(`internal runner error: ${message}`, utcnow(), ...inFlight);
       });

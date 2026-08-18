@@ -39,6 +39,18 @@ export interface BatchStoreHarness<TRow extends ClaimedRow = ClaimedRow> {
   rows: readonly number[];
   /** How many of `rows` are claimed right now, however the store records that. */
   claimed(): Promise<number>;
+  /**
+   * Settle a row, and name the state it settled into.
+   *
+   * Term 10 is about a status a claim displaced, so the suite needs a row in
+   * some state other than the one every row starts in - and settling a row is
+   * lifecycle work (`commitSuccess`, `commitVerdict`), exactly as creating one
+   * is. The returned label is compared against {@link stateOf} and is never
+   * interpreted, so a store may name its states whatever it names them.
+   */
+  settle(rowNumber: number): Promise<string>;
+  /** The row's state right now, in the same vocabulary {@link settle} returns. */
+  stateOf(rowNumber: number): Promise<string>;
 }
 
 /** A fresh store holding `rowCount` claimable rows. One per case. */
@@ -124,6 +136,44 @@ export function batchConformance(make: BatchStoreFactory): ConformanceCase[] {
         equal(await store.unclaim(rows), 2, 'only the two claimed rows are released');
         equal(await claimed(), 0, 'nothing is left claimed');
         equal(await store.unclaim([]), 0, 'an empty sweep is a no-op');
+      }),
+    },
+    {
+      // A redo pass claims rows that already hold an answer. If releasing one
+      // sends it to `pending`, a hard kill mid-redo turns rows that held
+      // accepted work into rows the next ordinary run re-answers and re-pays
+      // for. Nothing is lost - the answer is still in the row - but nothing
+      // says so either, and the money is spent again.
+      name: 'a released row returns to the state it held before it was claimed (term 10)',
+      run: withRun(3, async ({ store, rows, settle, stateOf, claimed }) => {
+        const [redone, alsoRedone, untouched] = rows as [number, number, number];
+        const settledState = await settle(redone);
+        await settle(alsoRedone);
+        const freshState = await stateOf(untouched);
+        assert(
+          settledState !== freshState,
+          'the harness must settle a row into a state a fresh row is not in, ' +
+            `or this term cannot be observed (both are ${JSON.stringify(settledState)})`,
+        );
+
+        // Every release path makes the same promise, so each is checked. They
+        // are separate statements in a real store and it is one edit to fix
+        // only the one a test happened to name.
+        assert(await store.tryClaim(redone, 'run-1'), 'a settled row is claimable: that is a redo');
+        assert(await store.tryClaim(untouched, 'run-1'), 'and so is a fresh one');
+        equal(await store.unclaim([redone, untouched]), 2, 'both are released');
+        equal(await stateOf(redone), settledState, 'unclaim gives the settled row back its state');
+        equal(await stateOf(untouched), freshState, 'and leaves a fresh row where it was');
+
+        assert(await store.tryClaim(redone, 'run-1'), 'claim it again for the next path');
+        await store.reclaimStale(0);
+        equal(await stateOf(redone), settledState, 'reclaimStale restores it too');
+
+        assert(await store.tryClaim(redone, 'run-1'), 'and once more');
+        await store.finishRun('run-1', 'interrupted');
+        await store.releaseSettledRunClaims();
+        equal(await stateOf(redone), settledState, 'and so does releaseSettledRunClaims');
+        equal(await claimed(), 0, 'no path out leaves it claimed');
       }),
     },
     {

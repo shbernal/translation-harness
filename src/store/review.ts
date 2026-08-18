@@ -68,7 +68,7 @@ import { REVIEW_OUTCOMES } from './review-types.ts';
  * and two independent stamps are what makes "never" enforceable rather than
  * merely intended.
  */
-export const REVIEW_SCHEMA_VERSION = 1;
+export const REVIEW_SCHEMA_VERSION = 2;
 
 /** Where that version lives. Answers 0 for a file that has no review half. */
 export const REVIEW_STAMP = tableStamp('review');
@@ -115,6 +115,9 @@ CREATE TABLE IF NOT EXISTS review_items (
   proposals_json TEXT,
   issues_json TEXT,
   pass_id TEXT,
+  -- The outcome tryClaim displaced, so a released row goes back to what it was
+  -- rather than to 'pending'. Null whenever the row is not claimed.
+  claimed_from TEXT,
   started_at TEXT,
   finished_at TEXT,
   attempt_count INTEGER NOT NULL DEFAULT 0,
@@ -450,7 +453,8 @@ export function reviewStore(
       const changed = tx(db, () => {
         const cursor = db
           .prepare(
-            `UPDATE review_items SET outcome = 'running', pass_id = ?, started_at = ?, updated_at = ?
+            `UPDATE review_items SET claimed_from = outcome, outcome = 'running', pass_id = ?,
+                    started_at = ?, updated_at = ?
              WHERE review_run_id = ? AND row_number = ? AND outcome != 'running'`,
           )
           .run(passId, now, now, reviewRunId, rowNumber);
@@ -465,7 +469,8 @@ export function reviewStore(
       return tx(db, () => {
         const cursor = db
           .prepare(
-            `UPDATE review_items SET outcome = 'pending', pass_id = NULL, updated_at = ?
+            `UPDATE review_items SET outcome = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    pass_id = NULL, updated_at = ?
              WHERE review_run_id = ? AND outcome = 'running'
                AND row_number IN (${rowNumbers.map(() => '?').join(',')})`,
           )
@@ -522,8 +527,8 @@ export function reviewStore(
         ).run(utcnow(), reviewRunId);
         const cursor = db
           .prepare(
-            `UPDATE review_items SET outcome = 'pending', pass_id = NULL,
-                    last_error = 'reclaimed stale running row', updated_at = ?
+            `UPDATE review_items SET outcome = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    pass_id = NULL, last_error = 'reclaimed stale running row', updated_at = ?
              WHERE review_run_id = ? AND outcome = 'running' AND updated_at <= ?`,
           )
           .run(utcnow(), reviewRunId, cutoff);
@@ -549,7 +554,8 @@ export function reviewStore(
         ).run(utcnow(), reviewRunId);
         const cursor = db
           .prepare(
-            `UPDATE review_items SET outcome = 'pending', pass_id = NULL,
+            `UPDATE review_items SET outcome = COALESCE(claimed_from, 'pending'), claimed_from = NULL,
+                    pass_id = NULL,
                     last_error = 'released: the pass holding this row had already ended', updated_at = ?
              WHERE review_run_id = ? AND outcome = 'running' AND pass_id IS NOT NULL
                AND pass_id IN (SELECT pass_id FROM review_passes WHERE status != 'running')`,
@@ -639,7 +645,7 @@ export function reviewStore(
         db.prepare(
           `UPDATE review_items SET outcome = ?, severity = ?, confidence = ?, proposals_json = ?,
              issues_json = ?, finished_at = ?, attempt_count = ?, last_error = NULL, pass_id = NULL,
-             updated_at = ?
+             claimed_from = NULL, updated_at = ?
            WHERE review_run_id = ? AND row_number = ?`,
         ).run(
           a.verdict,
@@ -661,7 +667,7 @@ export function reviewStore(
         db
           .prepare(
             `UPDATE review_items SET outcome = 'failed', attempt_count = ?, last_error = ?,
-               pass_id = NULL, updated_at = ?
+               pass_id = NULL, claimed_from = NULL, updated_at = ?
              WHERE review_run_id = ? AND row_number = ?`,
           )
           .run(a.attemptCount, a.lastError, utcnow(), reviewRunId, a.rowNumber),
@@ -684,7 +690,8 @@ export function reviewStore(
         ).run(utcnow(), message, passId);
         if (!inFlight.length) return;
         db.prepare(
-          `UPDATE review_items SET outcome = 'failed', last_error = ?, pass_id = NULL, updated_at = ?
+          `UPDATE review_items SET outcome = 'failed', last_error = ?, pass_id = NULL,
+                  claimed_from = NULL, updated_at = ?
            WHERE review_run_id = ? AND outcome = 'running'
              AND row_number IN (${inFlight.map(() => '?').join(',')})`,
         ).run(`internal runner error: ${message}`, utcnow(), reviewRunId, ...inFlight);
@@ -824,10 +831,33 @@ const TO_REVIEW_VERSION_1: MigrationStep = {
  * their file is not touched. A host who has them passes
  * `{ plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] }`.
  */
+/**
+ * Remember what a row was before it was claimed. The review half's copy of
+ * `TO_VERSION_2` on the translate side, stamped and migrated separately as
+ * every schema change here is.
+ *
+ * Additive, so no `refuse`: there is no existing data a new nullable column can
+ * contradict. A row already sitting `running` when this runs has no recorded
+ * prior outcome and stays null, so it keeps the old behaviour and is released
+ * to `pending` - the truth about it, rather than a fabricated value in the one
+ * column this step exists to make trustworthy.
+ */
+const TO_REVIEW_VERSION_2: MigrationStep = {
+  to: 2,
+  summary: 'record the outcome each claimed row held before it was claimed',
+
+  apply(db) {
+    const columns = db.prepare('PRAGMA table_info(review_items)').all() as { name: string }[];
+    if (!columns.some((c) => c.name === 'claimed_from')) {
+      db.exec('ALTER TABLE review_items ADD COLUMN claimed_from TEXT');
+    }
+  },
+};
+
 export const REVIEW_MIGRATIONS: MigrationPlan = {
   label: 'review',
   target: REVIEW_SCHEMA_VERSION,
   stamp: REVIEW_STAMP,
   isPresent: (db) => tableExists(db, 'review_items'),
-  steps: [TO_REVIEW_VERSION_1],
+  steps: [TO_REVIEW_VERSION_1, TO_REVIEW_VERSION_2],
 };

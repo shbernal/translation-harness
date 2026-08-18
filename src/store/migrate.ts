@@ -151,13 +151,35 @@ const TO_VERSION_1: MigrationStep = {
   },
 };
 
+/**
+ * Remember what a row was before it was claimed.
+ *
+ * Additive, and it needs no `refuse`: there is no existing data a new nullable
+ * column can contradict. A row already sitting `running` when this runs has no
+ * recorded prior status and stays null, so it keeps the old behaviour and is
+ * released to `pending`. That is the truth about it rather than a guess - the
+ * status it displaced was never written down, and inventing one here would put
+ * a fabricated value in the column this step exists to make trustworthy.
+ */
+const TO_VERSION_2: MigrationStep = {
+  to: 2,
+  summary: 'record the status each claimed row held before it was claimed',
+
+  apply(db) {
+    const columns = db.prepare('PRAGMA table_info(items)').all() as { name: string }[];
+    if (!columns.some((c) => c.name === 'claimed_from')) {
+      db.exec('ALTER TABLE items ADD COLUMN claimed_from TEXT');
+    }
+  },
+};
+
 /** The translate half: `items`, `runs`, `attempts`, stamped in `user_version`. */
 export const REGISTRY_MIGRATIONS: MigrationPlan = {
   label: 'registry',
   target: SCHEMA_VERSION,
   stamp: USER_VERSION_STAMP,
   isPresent: (db) => tableExists(db, 'items'),
-  steps: [TO_VERSION_1],
+  steps: [TO_VERSION_1, TO_VERSION_2],
 };
 
 interface PlanState {

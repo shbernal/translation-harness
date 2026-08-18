@@ -4,11 +4,50 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ## Unreleased
 
-> **Every existing review run id moves.** See the first entry under Changed.
-> Finish any open review run before upgrading. This makes the next release a
+> **Two things need action before upgrading.** Every existing review run id
+> moves, so finish any open review run first; and both halves of the schema go
+> to version 2, so an existing registry must be migrated with
+> `migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] })`
+> before it will open. Both are under Changed. This makes the next release a
 > **minor** (0.3.0), not a patch.
 
 ### Changed
+
+- **A released row returns to the status it held before it was claimed**, which
+  is new contract term 10 and a schema change in both halves. `tryClaim`
+  overwrote `status` with `running` and recorded nothing about what it displaced,
+  so `unclaim`, `reclaimStale` and `releaseSettledRunClaims` all restored to
+  `pending`. A redo pass selects rows that already hold an answer, so a hard kill
+  mid-redo turned rows holding accepted translations into pending ones: the next
+  ordinary run re-translated them and re-spent the money. `target_json` survived
+  throughout, so nothing was lost and nothing anywhere said otherwise. The review
+  half did the same to `pass` and `change_proposed` rows, and additionally left
+  the run unable to report itself finished, since `counts.pending` was no longer
+  zero.
+
+  `items.claimed_from` and `review_items.claimed_from` record the displaced
+  status, written by the same single statement that takes the claim, and every
+  release path restores `COALESCE(claimed_from, 'pending')`. A column rather than
+  an inference on purpose: `review_reasons_json` plus `target_json` plus
+  `last_error` *almost* distinguish the five statuses, and a row seeded as
+  already-succeeded is a fourth shape that breaks the "almost".
+
+  **Migration required.** `SCHEMA_VERSION` and `REVIEW_SCHEMA_VERSION` both go 1
+  to 2, stamped and migrated separately as always, so a registry opens only after
+  `migrateRegistry(path)` - add `{ plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] }`
+  if the file has a review half. Both steps are additive
+  (`ALTER TABLE ... ADD COLUMN claimed_from TEXT`) and neither can refuse: there
+  is no existing data a new nullable column can contradict. A row already sitting
+  `running` when the migration runs has no recorded prior status and keeps the
+  old behaviour, being released to `pending`.
+
+  **For anyone implementing `BatchStore`:** term 10 is checked by
+  `batchConformance`, and `BatchStoreHarness` gains two members to make it
+  checkable - `settle(rowNumber)` and `stateOf(rowNumber)`. A claim can only be
+  shown to remember what it displaced if the suite can put a row into a state
+  other than the one every row starts in, and settling a row is lifecycle work
+  exactly as creating one is. An existing harness needs those two functions
+  added.
 
 - **A review run id is derived from a row's fields in sorted key order.**
   `snapshotMaterial`, `sourceHash` and `targetHash` hashed
