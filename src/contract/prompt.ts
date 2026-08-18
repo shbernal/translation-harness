@@ -1,7 +1,7 @@
 // Prompt assembly, and the two hashes that give a row and a run their identity.
 
 import { createHash } from 'node:crypto';
-import { type Fields, type TranslationJob, translatableFields } from '../job.ts';
+import { canonicalFields, type Fields, type TranslationJob, translatableFields } from '../job.ts';
 
 /** Marker that precedes the source-row JSON payload in every prompt. */
 export const SOURCE_ROW_MARKER = 'SOURCE ROW JSON:';
@@ -29,10 +29,7 @@ export function jobPromptHash(job: TranslationJob): string {
  * against a host that reads its fields in a different order tomorrow.
  */
 function canonical(identifier: string, source: Readonly<Fields>): string {
-  const keys = Object.keys(source).sort();
-  const ordered: Fields = { identifier } as Fields;
-  for (const key of keys) ordered[key] = source[key] ?? null;
-  return JSON.stringify(ordered);
+  return JSON.stringify({ identifier, ...canonicalFields(source) });
 }
 
 /**

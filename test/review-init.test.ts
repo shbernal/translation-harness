@@ -58,6 +58,31 @@ describe('the derived run id', () => {
     assert.equal(idOf(REVIEW_TEST_JOB, shuffled), BASE);
   });
 
+  // The other half of "the caller's iteration order is not an input", one level
+  // down. A `source` object remembers the order its keys were inserted in, so a
+  // host that builds its fields in a different sequence used to derive a
+  // different id for the same corpus - a new run rather than a resumed one,
+  // re-reviewed at full cost, with nothing anywhere saying why.
+  test('does not depend on the order the caller built each row in', () => {
+    const reversedKeys = corpus().map((row) => ({
+      ...row,
+      source: Object.fromEntries(Object.entries(row.source).reverse()) as Fields,
+      target: Object.fromEntries(Object.entries(row.target as Fields).reverse()) as Fields,
+    }));
+    // Guard the fixture: a one-key row would make this pass for free.
+    assert.ok(
+      reversedKeys.some((row) => Object.keys(row.source).length > 1),
+      'the corpus must have a row with more than one field for this to mean anything',
+    );
+    assert.notDeepEqual(
+      Object.keys(reversedKeys[0]?.source ?? {}),
+      Object.keys(corpus()[0]?.source ?? {}),
+      'and the two orders must actually differ',
+    );
+
+    assert.equal(idOf(REVIEW_TEST_JOB, reversedKeys as ReviewSourceRow[]), BASE);
+  });
+
   test('moves when the profile does, and an unbound run is its own run', () => {
     const bound = idOf(REVIEW_TEST_JOB, corpus(), 'sonnet-5');
     assert.notEqual(bound, BASE);

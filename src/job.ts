@@ -13,6 +13,26 @@ export type FieldValue = string | null;
 /** A row's values, by field key. */
 export type Fields = Record<string, FieldValue>;
 
+/**
+ * The same fields in sorted key order, with absent and null treated alike.
+ *
+ * For hashing, and only for hashing. A JavaScript object remembers the order
+ * its keys were inserted in, and `JSON.stringify` writes them back in that
+ * order - so two hosts that build the same row's fields in a different sequence
+ * produce different bytes for the same data. Anything deriving an identity from
+ * those bytes then reports two identities for one input, which is the opposite
+ * of what a derived id is for.
+ *
+ * It lives here rather than beside either caller because both halves of the
+ * library need it and neither may import the other: `contract` and `review` are
+ * siblings, and `job` is the layer they both already stand on.
+ */
+export function canonicalFields(fields: Readonly<Fields>): Fields {
+  const ordered: Fields = {};
+  for (const key of Object.keys(fields).sort()) ordered[key] = fields[key] ?? null;
+  return ordered;
+}
+
 /** One field of a source record, mapped to a stable key. */
 export interface FieldSpec {
   /** Stable identifier used in the prompt payload, the schema, and the store. */

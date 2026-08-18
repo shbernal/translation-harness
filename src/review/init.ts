@@ -23,7 +23,7 @@
 // run id, which is a different run - not a run with a hole in it.
 
 import { createHash } from 'node:crypto';
-import type { Fields, TranslationJob } from '../job.ts';
+import { canonicalFields, type Fields, type TranslationJob } from '../job.ts';
 import type {
   ReviewItemRecord,
   ReviewRunStatus,
@@ -213,14 +213,28 @@ export function settledByConstruction(
 const FIELD = String.fromCharCode(0);
 const ROW = String.fromCharCode(1);
 
+/**
+ * A row's fields as bytes, in an order the host cannot influence.
+ *
+ * Every hash on this page runs through it. `JSON.stringify` writes an object's
+ * keys in insertion order, so hashing a host's object directly made the derived
+ * run id an accident of the sequence that host happened to build its fields in:
+ * the same corpus presented twice, differently ordered, derived two ids, and
+ * `init` created a second run and re-reviewed a corpus it had already paid for.
+ * `hashInput` in `contract/prompt.ts` has sorted its keys since it was written,
+ * and says in its own comment that this is what the sorting is for, so the two
+ * halves of the library disagreed about the same question.
+ */
+const canonicalJson = (fields: Readonly<Fields>): string => JSON.stringify(canonicalFields(fields));
+
 function snapshotMaterial(rows: readonly ReviewSourceRow[]): string {
   return rows
     .map((row) =>
       [
         row.identifier,
         row.inputHash,
-        JSON.stringify(row.source),
-        row.target === null ? '' : JSON.stringify(row.target),
+        canonicalJson(row.source),
+        row.target === null ? '' : canonicalJson(row.target),
       ].join(FIELD),
     )
     .join(ROW);
@@ -292,8 +306,8 @@ export function deriveReviewRun(inputs: ReviewDerivationInputs): ReviewDerivatio
       rowNumber: row.rowNumber,
       identifier: row.identifier,
       inputHash: row.inputHash,
-      sourceHash: sha(JSON.stringify(row.source)),
-      targetHash: sha(row.target === null ? '' : JSON.stringify(row.target)),
+      sourceHash: sha(canonicalJson(row.source)),
+      targetHash: sha(row.target === null ? '' : canonicalJson(row.target)),
       evidenceHash: sha(JSON.stringify(recordedEvidence(analysis, row.source))),
       source: row.source,
       // Stored as an object even when the row has none, so every reader of a

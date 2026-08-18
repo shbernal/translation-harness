@@ -334,11 +334,24 @@ Three things are deliberately *not* inputs, and each is checkable:
 | Not an input | Why |
 |---|---|
 | the order the caller iterated the corpus | rows are sorted by row number before anything is hashed |
+| the order the caller built each row's fields in | `source` and `target` are hashed in sorted key order, with absent and null treated alike |
 | the provider and the model | a binding can legitimately arrive later (`bindProvider`); an input that can arrive after the id was computed cannot be one of its inputs |
 | `allowPartial` | a row with no answer already snapshots differently from the same row once it has one |
 
 The **profile** is an input, because it is chosen when the run is opened and it
 names the configuration the run means.
+
+The second row of that table used not to hold. `snapshotMaterial`,
+`sourceHash` and `targetHash` hashed `JSON.stringify(row.source)`, and a
+JavaScript object writes its keys back in the order they were inserted - so a
+host that assembled its fields in a different sequence derived a different run
+id for the same corpus, and `init` opened a second run and re-reviewed a corpus
+it had already paid for. The whole argument for a derived id is that a changed
+input is a different run and an unchanged input is the same run; a key order
+nobody authored deciding the second half of that made the id an accident of how
+the host happened to build an object. `canonicalFields` in `src/job.ts` is the
+one spelling both halves of the library now use - `hashInput` had sorted its
+keys since it was written, so the two disagreed until this landed.
 
 `deriveReviewRun` is init with the writing taken out: pure, no store, no clock,
 no filesystem. Use it to answer "what id would these inputs produce" before

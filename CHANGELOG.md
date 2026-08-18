@@ -4,6 +4,42 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ## Unreleased
 
+> **Every existing review run id moves.** See the first entry under Changed.
+> Finish any open review run before upgrading. This makes the next release a
+> **minor** (0.3.0), not a patch.
+
+### Changed
+
+- **A review run id is derived from a row's fields in sorted key order.**
+  `snapshotMaterial`, `sourceHash` and `targetHash` hashed
+  `JSON.stringify(row.source)` directly. A JavaScript object writes its keys
+  back in insertion order, so a host that assembled its `source` objects in a
+  different sequence derived a *different run id for the same corpus*: `init`
+  found nothing to resume, created a second run, and re-reviewed the whole
+  corpus at full cost. `hashInput` on the translation side has sorted its keys
+  since it was written and says in its own comment that this is what the sorting
+  is for, so the two halves of the library disagreed about the same question.
+
+  Both now go through `canonicalFields` in `src/job.ts`, which sorts keys and
+  treats absent and null alike. **`hashInput` produces byte-identical output to
+  before** - checked against the previous implementation, including a `source`
+  carrying its own `identifier` key - so no translation row's `input_hash` moves
+  and no translate resume is affected.
+
+  **What to do before upgrading.** Finish any open review run. A host that
+  upgrades mid-review will find `init` deriving an id that does not exist in its
+  registry, which creates a second run over the same corpus and starts the
+  review again. There is no version of this that keeps the old ids and fixes the
+  bug: the id *is* the hash. If old runs must stay reachable, record their ids
+  first - they remain readable by id, and only newly derived ids move.
+
+  The example review CLI derives `3203ac4fa18f122f86702a85b9d0327a` from a reset
+  registry where it derived `f134a8e1b7443d54585c76419bc450dd`, with the
+  snapshot hash moving from `89047e2583648d5c` to `f054bd9a20af1642`. The
+  `analysisOutput` hash does not move: `recordedEvidence` keys its object from
+  the job's declared field list rather than from the host's object, so it never
+  had the defect.
+
 ### Fixed
 
 - **`reclaimStale` no longer interrupts a run that is still working.** Both
