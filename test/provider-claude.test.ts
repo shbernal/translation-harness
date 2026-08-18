@@ -110,7 +110,7 @@ describe('invokeClaude', () => {
     const invocation = args('audit');
     await invokeClaude(invocation);
 
-    const sidecar = invocation.responsePath.replace(/\.json$/, '') + '.system-prompt.txt';
+    const sidecar = `${invocation.responsePath.replace(/\.json$/, '')}.system-prompt.txt`;
     assert.ok(existsSync(sidecar), 'the exact system prompt that produced the answer is kept');
     const text = readFileSync(sidecar, 'utf8');
     assert.match(text, /non-interactive translation function/);
