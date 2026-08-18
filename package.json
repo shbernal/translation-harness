@@ -1,6 +1,6 @@
 {
   "name": "translation-harness",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Drive non-interactive coding-agent CLIs as resumable, guardrailed translation workers over a structured corpus, then review what they produced.",
   "keywords": [
     "translation",

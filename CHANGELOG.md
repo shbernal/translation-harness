@@ -2,14 +2,17 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
-## Unreleased
+## 0.3.0
+
+A review pass over the whole library, and the two corrections that move
+state a host has already stored.
 
 > **Two things need action before upgrading.** Every existing review run id
 > moves, so finish any open review run first; and both halves of the schema go
 > to version 2, so an existing registry must be migrated with
 > `migrateRegistry(path, { plans: [REGISTRY_MIGRATIONS, REVIEW_MIGRATIONS] })`
-> before it will open. Both are under Changed. This makes the next release a
-> **minor** (0.3.0), not a patch.
+> before it will open. Both are under Changed, and both are why this is a
+> minor rather than a patch.
 
 ### Changed
 
@@ -78,6 +81,18 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   `analysisOutput` hash does not move: `recordedEvidence` keys its object from
   the job's declared field list rather than from the host's object, so it never
   had the defect.
+
+- **A row with nothing to translate now says so.** A row whose translatable
+  fields are all blank still goes to `review_required` - that is deliberate, and
+  it is the inherited behaviour - but its reason is `no translatable content`
+  rather than `suspicious combined length ratio: 0.00`. The ratio was arithmetic
+  about an empty string, and it read as a warning about a translation that does
+  not exist.
+
+  Which rows are flagged is unchanged, so a resumed run reports different text
+  for these rows and not a different set of rows. A host that matches on the
+  reason string will need the new one; nothing in the library selects on it, and
+  it is provenance rather than state.
 
 ### Fixed
 
@@ -159,20 +174,6 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   worth fixing is that the failure would be quiet and pre-selected: an exporter
   defaulting a field's dropdown to `proposal` wherever the proposal is non-null
   offers the deletion already chosen, and `""` is non-null.
-
-### Changed
-
-- **A row with nothing to translate now says so.** A row whose translatable
-  fields are all blank still goes to `review_required` - that is deliberate, and
-  it is the inherited behaviour - but its reason is `no translatable content`
-  rather than `suspicious combined length ratio: 0.00`. The ratio was arithmetic
-  about an empty string, and it read as a warning about a translation that does
-  not exist.
-
-  Which rows are flagged is unchanged, so a resumed run reports different text
-  for these rows and not a different set of rows. A host that matches on the
-  reason string will need the new one; nothing in the library selects on it, and
-  it is provenance rather than state.
 
 ### Removed
 
