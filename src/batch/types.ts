@@ -67,8 +67,8 @@ export interface AttemptPaths {
  *
  * These are the terms the runner is written against, not a description of the
  * SQLite store, and `batchConformance` in `conformance.ts` checks every one.
- * They are numbered as they are in `docs/architecture.md`, where terms 1 to 5 are
- * these, 6 and 9 belong to `TranslationStore` and 7 and 8 to `ReviewStore`, so a
+ * They are numbered as they are in `docs/architecture.md`, where terms 1 to 5 and
+ * 10 are these, 6 and 9 belong to `TranslationStore` and 7 and 8 to `ReviewStore`, so a
  * reference to "term 2" means the same thing wherever it appears. One sequence
  * over every interface, which is why a term's number is not contiguous with its
  * interface's others.
@@ -97,6 +97,16 @@ export interface AttemptPaths {
  *    store's business; `sqliteStore` takes a `pathBase` and relativizes against
  *    it. A consumer reading paths back gets whatever form that store chose.
  *
+ * 10. **A released row returns to the status it held before it was claimed.**
+ *    All three release paths owe this - `unclaim`, `reclaimStale` and
+ *    `releaseSettledRunClaims` - so all three are checked. A redo pass claims
+ *    rows that already hold an answer, so releasing one to `pending` turns
+ *    accepted work into rows the next ordinary run re-answers and re-pays for.
+ *    Nothing is lost when that happens, which is what makes it worth a term:
+ *    the answer is still in the row, so there is no failure anywhere to notice.
+ *    The number is 10 rather than 6 because the sequence runs over all three
+ *    interfaces and this term was added after the others were numbered.
+ *
  * What is deliberately *not* here is how a row is created, selected or settled.
  * Those are the lifecycle's, which is why `initialize`, `selectCandidates`,
  * `commitSuccess` and `markItemFailed` are on `TranslationStore` and why the
@@ -114,7 +124,11 @@ export interface BatchStore<TRow extends ClaimedRow = ClaimedRow> {
    */
   tryClaim(rowNumber: number, runId: string): Promise<TRow | null>;
 
-  /** Release rows back to pending, ignoring any no longer claimed. */
+  /**
+   * Release rows to the status they held before they were claimed, ignoring any
+   * no longer claimed. Term 10: `pending` is the right answer for a row a first
+   * pass claimed and the wrong one for a row that already held an answer.
+   */
   unclaim(rowNumbers: readonly number[]): Promise<number>;
 
   /** Reclaim rows and runs abandoned by a process that never came back. */

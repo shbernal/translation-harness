@@ -63,6 +63,14 @@ else is in `docs/`.
 - **Never write tests that make live model calls.** The mock provider runs the
   whole loop offline and deterministically. A test that spawns a real CLI is a
   test that fails in CI and costs money.
+- **A test for a fix must be shown to fail without the fix.** Stash the source
+  change, run the new test, watch it fail, restore. A test that passes either way
+  is worse than no test: it reports the bug as covered and will not notice its
+  return. This is not hypothetical here - two end-to-end cases written for
+  contract term 10 passed against the unfixed store, because they cancelled the
+  run with an `AbortSignal` and an abort lets in-flight rows commit, so no claim
+  was ever stranded for the fix to release. See
+  [docs/pipeline.md](docs/pipeline.md#cancellation-is-a-signal-not-a-handler).
 - **`test/fixtures/` is immutable upstream material.** Do not edit it, do not
   reformat it, do not let a lint autofix touch it. Each fixture is a third-party
   work redistributed under its own license, and its bytes are what the
@@ -89,7 +97,10 @@ else is in `docs/`.
   and migrated separately: `SCHEMA` / `SCHEMA_VERSION` / `REGISTRY_MIGRATIONS`
   for the translate tables, and `REVIEW_SCHEMA` / `REVIEW_SCHEMA_VERSION` /
   `REVIEW_MIGRATIONS` in `src/store/review.ts` for the review ones. See
-  [docs/architecture.md](docs/architecture.md#migration).
+  [docs/architecture.md](docs/architecture.md#migration). Both `SCHEMA`
+  constants are template literals, so **a comment inside the DDL cannot use
+  backticks**: one ends the literal, and what it reports is a parse error
+  further down the file rather than anything about the comment.
 - **Nothing may be awaited between a successful `tryClaim` and the two lines
   that record the row locally.** A row claimed in the registry but missing from
   the run's own list is never released, sits in `running`, and is invisible to

@@ -91,22 +91,32 @@ for the same reason.
 It is generic in the row type it claims, so `TranslationStore extends
 BatchStore<Item>` and the runner hands your own row shape to your own callbacks.
 
-Terms 1 to 5 of the [contract](architecture.md#the-six-contract-terms) are this
-interface's, and `batchConformance` checks them:
+Terms 1 to 5 and 10 of the [contract](architecture.md#the-ten-contract-terms)
+are this interface's, and `batchConformance` checks them:
 
 ```ts
 for (const { name, run } of batchConformance(async (rowCount) => {
   const store = myStore();
   await seedSomehow(store, rowCount);
-  return { store, rows: [...], claimed: async () => countClaimed(store) };
+  return {
+    store,
+    rows: [...],
+    claimed: async () => countClaimed(store),
+    settle: async (rowNumber) => settleSomehow(store, rowNumber), // the state it settled into
+    stateOf: async (rowNumber) => readState(store, rowNumber),    // in that same vocabulary
+  };
 })) test(name, run);
 ```
 
 The factory hands back a harness rather than a store because **`BatchStore` has
-no way to create a row and no way to count a claim**, and that is deliberate:
-both are lifecycle knowledge. Widening the base interface so that its own test
-suite could set itself up would have made the base interface a lie, so the suite
-asks the host for exactly those two capabilities instead. This package's own tests
+no way to create a row, no way to count a claim and no way to settle one**, and
+that is deliberate: all three are lifecycle knowledge. Widening the base
+interface so that its own test suite could set itself up would have made the
+base interface a lie, so the suite asks the host for exactly those capabilities
+instead. `settle` and `stateOf` are there for term 10: a claim can only be shown
+to remember what it displaced if the suite can put a row into some state other
+than the one every row starts in, and the labels they trade in are never
+interpreted, so a store may name its states whatever it names them. This package's own tests
 run the suite against `sqliteStore` and against a store made of `Map`s, which is
 the only way to find out whether a conformance suite tests the interface or tests
 one implementation.

@@ -6,9 +6,9 @@
 // load with nothing anywhere to tell them. Every term in the doc comment on
 // `TranslationStore` has a case here.
 //
-// Terms 1 to 5 belong to `BatchStore`, so their cases do too: this suite runs the
-// whole of `batchConformance` before its own, against a harness built out of
-// `initialize` and `counts`. A translation store therefore *proves* the generic
+// Terms 1 to 5 and 10 belong to `BatchStore`, so their cases do too: this suite
+// runs the whole of `batchConformance` before its own, against a harness built
+// out of `initialize`, `counts` and a settled row. A translation store *proves* the generic
 // terms rather than asserting them, and a review store proving the same suite
 // starts from guarantees that are already demonstrated.
 //

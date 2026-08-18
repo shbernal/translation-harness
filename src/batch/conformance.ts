@@ -3,7 +3,7 @@
 // An interface with no conformance suite is an interface nobody can implement
 // correctly. The failure this exists to prevent is specific: somebody starts a
 // Postgres store, gets `tryClaim` subtly wrong, and double-answers rows under
-// load with nothing anywhere to tell them. Terms 1 to 5 on `BatchStore` have a
+// load with nothing anywhere to tell them. Terms 1 to 5 and 10 on `BatchStore` have a
 // case here, and `storeConformance` runs the whole of this suite before its own
 // lifecycle cases, so a translation store proves the generic terms rather than
 // asserting them.

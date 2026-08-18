@@ -127,10 +127,11 @@ export interface StoreRecord {
  * every one of them, and running it is how you find out whether your store is
  * actually a store.
  *
- * **Terms 1 to 5 are `BatchStore`'s** and their prose is on that interface: every
- * method is its own transaction; `tryClaim` is atomic against other *processes*;
- * store failures are never row failures; `recordInternalError` may itself fail;
- * paths handed to the store are absolute. They are checked by `batchConformance`,
+ * **Terms 1 to 5 and 10 are `BatchStore`'s** and their prose is on that interface:
+ * every method is its own transaction; `tryClaim` is atomic against other
+ * *processes*; store failures are never row failures; `recordInternalError` may
+ * itself fail; paths handed to the store are absolute; and a released row returns
+ * to the status it held before it was claimed. They are checked by `batchConformance`,
  * which `storeConformance` runs first. Nothing about them is translation-specific,
  * which is why they are stated once for both lifecycles.
  *

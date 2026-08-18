@@ -3,7 +3,7 @@
 // `ReviewStore extends BatchStore<ReviewItem>` for the same reason
 // `TranslationStore` does: the pool that claims a row, retries it and records
 // its attempts is one piece of code, so the two lifecycles differ only in what a
-// settled row means. Terms 1 to 5 are inherited rather than restated, and
+// settled row means. Terms 1 to 5 and 10 are inherited rather than restated, and
 // `batchConformance` proves them against this store too.
 //
 // One structural difference from the translate half is worth reading before the
@@ -162,8 +162,8 @@ export interface ReviewFailArgs {
  *
  * ## What an implementation must guarantee
  *
- * **Terms 1 to 5 are `BatchStore`'s**, stated once on that interface and checked
- * by `batchConformance`, which this store passes unchanged. Two more are this
+ * **Terms 1 to 5 and 10 are `BatchStore`'s**, stated once on that interface and
+ * checked by `batchConformance`, which this store passes unchanged. Two more are this
  * interface's own, and both exist because a review run is a fixed object:
  *
  * 7. **`createRun` writes the run and all of its rows in one transaction, and

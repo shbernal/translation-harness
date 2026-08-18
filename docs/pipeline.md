@@ -124,6 +124,16 @@ A library installing a process-wide signal handler is wrong even if it removes
 it afterwards, so wiring it is yours, and it is two lines. A signal that is
 already aborted stops the run before it claims anything.
 
+**An abort is not a kill, and the difference is what happens to a claim.**
+Aborting stops workers pulling new rows; the rows already in flight finish their
+attempt and commit, and the run's own final sweep releases anything left. So an
+aborted run strands nothing. A process that dies mid-row is the case the
+reclamation paths exist for: its claims outlive it, its run stays `running`, and
+nothing is released until another process calls `reclaimStale` or the run is
+marked ended and `releaseSettledRunClaims` runs. A test that means to produce a
+stranded claim therefore has to claim a row and abandon it, because an
+`AbortController` will not produce one.
+
 ## Progress is events, not output
 
 The runner owns no output stream. `onEvent` receives:
