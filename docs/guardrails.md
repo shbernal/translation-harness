@@ -46,9 +46,9 @@ waved through.
 
 ## The length ratio, and what its default actually means
 
-The shipped bounds are **0.45 to 2.25** on
-`translated.length / max(source.length, 1)` over the concatenated translatable
-fields.
+The shipped bounds are **0.45 to 2.25** on `translated.length / source.length`
+over the concatenated translatable fields. A row whose source is blank never
+reaches the division: it is answered by the check below this one instead.
 
 Those numbers were *chosen* on one language pair over one corpus of long-form
 technical prose. They have since been *measured*, and the measurement is
@@ -106,11 +106,25 @@ is the cheapest way to extend the claim. See `test/fixtures/README.md`.
 
 ### The all-blank row
 
-A row whose translatable fields are **all blank** trips the ratio check by
-construction: zero over one is zero, which is below any sane lower bound. The row
-goes to review, which is deliberate - a row with nothing to translate is worth a
-glance - and the reason it carries is `no translatable content` rather than a
-ratio, because there is no translation for a ratio to be suspicious about.
+A row whose translatable fields are **all blank** goes to review carrying
+`no translatable content`. That is deliberate: a row with nothing to translate is
+worth a glance, and there is no translation for a ratio to be suspicious about.
+Blankness is decided on the source alone, whitespace counting as blank, and it is
+asked before the ratio rather than derived from it.
+
+**It used to be derived from it, and that made it depend on the field count.**
+The checks run over the fields joined with `\n`. A job with one translatable
+field concatenated an all-blank row to `''`, so the ratio was zero and the row
+was flagged. A job with two or more concatenated the same row to `'\n'` on both
+sides, so the ratio was exactly 1.00 and the row **passed**. Same row, same
+emptiness, opposite verdict, decided by how many newlines the join added. This
+page and the reason string both described the single-field case as though it were
+the rule. It now is one.
+
+If your job has more than one translatable field, expect all-blank rows that used
+to pass to arrive in review. They are rows with nothing in them; they are cheap
+to disposition, and a job that would rather not see them at all can drop the
+reason in its own terms.
 
 ## Normalization runs before the checks
 
@@ -123,6 +137,38 @@ The intended use is orthotypography, where a target language's conventions
 differ from what a model emits by default. A precomputed row routes through the
 same function, so it inherits the rule with no second code path. The per-attempt
 response file still holds the raw model output, so the audit trail survives.
+
+### A normalizer reaches no hash, and that is yours to manage
+
+`jobPromptHash` covers the prompt template and `promptSalt`. It does **not** cover
+`job.normalize`, and neither does anything else this library records. So changing
+a normalizer rewrites every value accepted afterwards while every recorded
+identity in the store stays exactly where it was. The corpus quietly splits into
+two typographic eras and no row says which one it is in.
+
+With a normalizer hand-written in the tree next to the job, that is close to
+harmless. It stops being harmless the moment `normalize` comes from a
+**versioned package you upgrade**, because then the rendering can move without
+anybody editing this repo or that one. If yours does, record whatever identity
+the package exposes for the rule set next to the run, on your side. This library
+does not store one, and "which rows are behind the current style" is therefore a
+re-run of the normalizer over every row and a diff of the output, not a query.
+That is the deliberate cheap answer: the seam is one function, `(value: string)
+=> string`, and the judgement about typography stays with the caller like every
+other judgement here.
+
+**Do not fold a style identity into `promptSalt` to get around this.** Moving
+`promptSalt` moves `jobPromptHash`, which says *re-ask the model* - both wrong
+and expensive. The stored answer is fine; only its rendering is stale, and what
+stale rendering calls for is a backfill.
+
+The general rule, which is worth more than this instance: **an input that reaches
+a run must reach exactly one of the prompt or the stored value, and whichever it
+reaches needs its own recorded identity.** The termbase digest is the same
+finding pointed the other way, and it went the cheaper direction - it moves a
+hash without changing what the model saw, so a reader can at least find it
+afterwards. A normalizer moves the stored value without moving a hash, so nothing
+can find it after the fact.
 
 ## Writing a validator
 

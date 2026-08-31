@@ -204,14 +204,35 @@ describe('genericReviewReasons', () => {
   });
 
   test('a row whose fields are all blank is flagged, and says so in those terms', () => {
-    // The behaviour is kept: `0 / max(0, 1)` is below any sane lower bound, so a
-    // row where every translatable field is empty is still sent to review, which
-    // is defensible (a row with nothing to translate is worth a human glance).
-    // What changed is the reason. `suspicious combined length ratio: 0.00`
-    // described the arithmetic and read as a warning about the translation;
-    // there is no translation to warn about. A resumed run reports different
-    // text for these rows, not a different set of rows.
+    // `suspicious combined length ratio: 0.00` described the arithmetic and read
+    // as a warning about the translation; there is no translation to warn about.
     assert.deepEqual(genericReviewReasons('', '', T), ['no translatable content']);
+  });
+
+  test('an all-blank row is flagged whatever the field count, separators included', () => {
+    // The flag used to be a side effect of the ratio, and the join separator
+    // decided whether the side effect happened. One translatable field gives
+    // `''` against `''`, so `0 / max(0, 1)` is 0 and the row is flagged; two or
+    // more give a string of newlines against the same string of newlines, so the
+    // ratio is exactly 1.00 and the row passes. Same row, same emptiness,
+    // opposite verdict, and the only reason is how many newlines the join added.
+    for (const fieldCount of [1, 2, 3, 7]) {
+      const concat = Array(fieldCount).fill('').join('\n');
+      assert.deepEqual(
+        genericReviewReasons(concat, concat, T),
+        ['no translatable content'],
+        `${fieldCount} blank field(s) should read as no translatable content`,
+      );
+    }
+  });
+
+  test('blankness is a property of the source, and a partly blank row is a real row', () => {
+    // Whitespace-only counts as blank: a source of spaces and tabs has nothing to
+    // measure a ratio against any more than an empty one does.
+    assert.deepEqual(genericReviewReasons(' \t \n ', '', T), ['no translatable content']);
+    // A row blank in one field only still has content, so it keeps the ratio
+    // check rather than being written off as having none.
+    assert.deepEqual(genericReviewReasons('\nhello there', '\nsalut a tous', T), []);
   });
 
   test('flags a suspicious length ratio and says what it was', () => {

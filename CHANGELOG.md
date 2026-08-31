@@ -2,6 +2,61 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- **An all-blank row is flagged whatever the field count.** The generic content
+  checks run over the translatable fields joined with `\n`, and the flag for a
+  row with nothing in it was a side effect of the length ratio, so the join
+  separator decided whether the side effect happened. One translatable field
+  concatenated an all-blank row to `''`: the ratio was `0 / max(0, 1)`, below the
+  lower bound, and the row went to review carrying `no translatable content`. Two
+  or more concatenated the same row to `'\n'` on both sides: the ratio was
+  exactly 1.00 and the row **passed**. Same row, same emptiness, opposite
+  verdict, and the only reason was how many newlines the join added.
+
+  Blankness is now asked first, on the source alone, with whitespace counting as
+  blank, and the ratio is only taken when there is something to take it of. The
+  bounds therefore apply to `translated.length / source.length`; the
+  `max(source.length, 1)` guard is gone because the blank case no longer reaches
+  the division.
+
+  **This moves which rows are flagged, for jobs with more than one translatable
+  field.** Rows that are entirely empty and used to pass will now arrive in
+  review. Nothing fails, nothing is discarded, and no row with content in it
+  changes verdict. The calibration is untouched by construction rather than by
+  luck: a blank source never produced a `suspicious combined length ratio` reason
+  under the old code either, so the one number `test/calibration.test.ts` measures
+  cannot move, and in any case none of the 3728 aligned fixture rows has a blank
+  source. Both this project's documentation and its one consumer already
+  described the behaviour as unconditional, so this is the code being made to
+  match what was written about it rather than a new opinion.
+
+### Development
+
+- **Biome to 2.5.11**, the lockfile with it. No rule changed behaviour and no
+  source needed touching. `@types/node` is deliberately left on `^24` while
+  `latest` is 26: this package declares `node >= 24`, and typing against a
+  runtime newer than the one it supports is how code that cannot run on the
+  stated floor compiles clean. TypeScript is already at the newest 7.x.
+
+### Documented
+
+- **A normalizer reaches no hash, and a host that upgrades one owns the
+  backfill.** `jobPromptHash` covers the prompt template and `promptSalt` only,
+  so changing `job.normalize` rewrites every value accepted afterwards while
+  every recorded identity in the store stays put, splitting a corpus into
+  typographic eras that no row identifies. That is the deliberate cheap answer -
+  the seam is one `(value: string) => string` and the typographic judgement stays
+  with the caller - but it was written down nowhere, and it starts to bite as
+  soon as `normalize` comes from a versioned package rather than from a function
+  in the tree. [docs/guardrails.md](docs/guardrails.md) now says so, says not to
+  reach for `promptSalt` (which says *re-ask the model*, when the answer is fine
+  and only its rendering is stale), and states the general rule: an input that
+  reaches a run must reach exactly one of the prompt or the stored value, and
+  whichever it reaches needs its own recorded identity.
+
 ## 0.3.0
 
 A review pass over the whole library, and the two corrections that move

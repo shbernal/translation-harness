@@ -28,11 +28,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /**
  * Generic, job-independent content checks over the concatenated fields.
  *
- * All three are cheap heuristics that catch the failure modes a model produces
- * when it is not quite doing the task: dropping a bracketed reference, answering
- * with a summary instead of a translation, or echoing the source back. None of
- * them is evidence of a defect on its own, which is why they produce review
- * reasons rather than failures.
+ * Three of them are cheap heuristics that catch the failure modes a model
+ * produces when it is not quite doing the task: dropping a bracketed reference,
+ * answering with a summary instead of a translation, or echoing the source back.
+ * None of them is evidence of a defect on its own, which is why they produce
+ * review reasons rather than failures.
+ *
+ * The fourth, `no translatable content`, is not about the model at all. The row
+ * had nothing to ask about, so nothing it got back can be suspicious; the reason
+ * exists because a row that is entirely empty is worth a human glance, and it
+ * takes the place of the ratio rather than sitting alongside it.
  */
 export function genericReviewReasons(
   source: string,
@@ -45,18 +50,23 @@ export function genericReviewReasons(
   if (open(source) !== open(translated) || close(source) !== close(translated)) {
     reasons.push('square-bracket count differs from source');
   }
-  // A row with nothing to translate trips the lower bound by construction: zero
-  // over max(0, 1) is zero. Sending it to review is deliberate - a row that is
-  // entirely blank is worth a human glance - but calling it a suspicious ratio
-  // described the arithmetic rather than the row. Which rows are flagged is
-  // unchanged; only the text of the reason is.
-  const ratio = translated.length / Math.max(source.length, 1);
-  if (ratio < thresholds.minLengthRatio || ratio > thresholds.maxLengthRatio) {
-    reasons.push(
-      source.trim()
-        ? `suspicious combined length ratio: ${ratio.toFixed(2)}`
-        : 'no translatable content',
-    );
+  // Blankness is asked first and on its own, because it is a different question
+  // from the ratio and it used to be answered by accident. A row with nothing to
+  // translate has no ratio worth taking: the check below then reports whichever
+  // side of the bounds the arithmetic happened to land on, and where the fields
+  // are joined that arithmetic is decided by the separators. One translatable
+  // field concatenates to `''`, so `0 / max(0, 1)` is 0 and the row was flagged;
+  // two or more concatenate to `'\n'` on both sides, so the ratio is exactly
+  // 1.00 and the same row passed. Sending an all-blank row to review is
+  // deliberate - a row with nothing to translate is worth a human glance - and
+  // it is now true of every job rather than of single-field jobs only.
+  if (!source.trim()) {
+    reasons.push('no translatable content');
+  } else {
+    const ratio = translated.length / source.length;
+    if (ratio < thresholds.minLengthRatio || ratio > thresholds.maxLengthRatio) {
+      reasons.push(`suspicious combined length ratio: ${ratio.toFixed(2)}`);
+    }
   }
   if (translated.trim() === source.trim() && source.trim().length > 0) {
     reasons.push('translation is identical to source');
