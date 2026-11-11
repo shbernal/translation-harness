@@ -67,6 +67,18 @@ describe('extractJsonObject', () => {
     assert.deepEqual(extractJsonObject('Sure, here you go:\n{"a":1}\nHope that helps.'), { a: 1 });
   });
 
+  test('takes a complete object the model kept writing after (#3)', () => {
+    assert.deepEqual(
+      extractJsonObject('{"identifier":"5.1","translations":{"stem":"x"}},"warnings":[]}'),
+      { identifier: '5.1', translations: { stem: 'x' } },
+    );
+    assert.deepEqual(extractJsonObject('{"a":1}{"b":2}'), { a: 1 });
+  });
+
+  test('a brace inside a string does not close the object', () => {
+    assert.deepEqual(extractJsonObject('{"a":"} and \\"{\\""} trailing }'), { a: '} and "{"' });
+  });
+
   test('a reply with no object at all is invalid_json, not a crash', () => {
     assert.throws(
       () => extractJsonObject('I would rather not.'),

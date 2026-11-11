@@ -33,6 +33,17 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
   described the behaviour as unconditional, so this is the code being made to
   match what was written about it rather than a new opinion.
 
+### Fixed
+
+- **A Claude reply that closes its object and keeps writing is no longer
+  thrown away** (#3). `extractJsonObject` parsed the span from the first `{` to
+  the last `}`, so `{...}},"warnings":[]}` or `{"a":1}{"b":2}` reached
+  `JSON.parse` with debris after a complete object and failed the attempt as
+  `invalid_json`, even though the answer was already there. It now parses the
+  first balanced object, tracking string and escape state so a brace inside a
+  value does not end it. The schema check downstream still decides whether
+  that object is acceptable. A reply holding two objects yields the first.
+
 ### Development
 
 - **Biome to 2.5.11**, the lockfile with it. No rule changed behaviour and no
