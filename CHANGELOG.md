@@ -2,7 +2,10 @@
 
 Notable changes, newest first. This project uses [semantic versioning](https://semver.org/).
 
-## Unreleased
+## 0.3.1
+
+A Claude reply that closes its object early is used instead of retried, and an
+all-blank row is flagged however many fields it has.
 
 ### Changed
 
@@ -46,6 +49,10 @@ Notable changes, newest first. This project uses [semantic versioning](https://s
 
 ### Development
 
+- **Biome 2.6.6, pnpm 12.18.0, and the CI actions on their current majors**
+  (checkout and setup-node v7, pnpm/action-setup v6). The publish job
+  authenticates with npm 12.2.2. A commit-check job forbids AI attribution in
+  commit messages.
 - **Biome to 2.5.11**, the lockfile with it. No rule changed behaviour and no
   source needed touching. `@types/node` is deliberately left on `^24` while
   `latest` is 26: this package declares `node >= 24`, and typing against a
