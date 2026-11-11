@@ -13,9 +13,11 @@ import type { InvokeArgs, Platform, ProviderResult } from './types.ts';
  *
  * Tolerant on purpose: a model asked for bare JSON still wraps it in a fence or
  * adds a sentence often enough that failing the row over it wastes an attempt
- * on something recoverable. Strips a leading code fence, then takes the span
- * between the first `{` and the last `}`. Anything left that will not parse is
- * a genuine `invalid_json`.
+ * on something recoverable. Strips a leading code fence, then takes the first
+ * balanced object: from the first `{` to the `}` that closes it, skipping braces
+ * inside strings. A model that closes its object and keeps writing still handed
+ * over a complete answer, and the schema check downstream decides whether it is
+ * the right one. Anything that will not parse is a genuine `invalid_json`.
  */
 export function extractJsonObject(text: string): unknown {
   let s = String(text ?? '').trim();
@@ -26,15 +28,31 @@ export function extractJsonObject(text: string): unknown {
       .trim();
   }
   const a = s.indexOf('{');
-  const b = s.lastIndexOf('}');
-  if (a === -1 || b === -1 || b < a) {
+  if (a === -1) {
     throw new TransientFailure('invalid_json', 'provider output contained no JSON object');
   }
+  const b = closingBrace(s, a);
   try {
-    return JSON.parse(s.slice(a, b + 1));
+    return JSON.parse(s.slice(a, b === -1 ? undefined : b + 1));
   } catch (error) {
     throw new TransientFailure('invalid_json', (error as Error).message);
   }
+}
+
+/** Index of the `}` that closes the object opened at `start`, or -1 if it never closes. */
+function closingBrace(s: string, start: number): number {
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inString) {
+      if (c === '\\') i++;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return i;
+  }
+  return -1;
 }
 
 export const CLAUDE_SYSTEM_PROMPT =
