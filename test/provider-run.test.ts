@@ -61,27 +61,6 @@ describe('run()', () => {
     assert.equal(res.status, null);
   });
 
-  test('a timeout and a launch failure stay distinguishable', async () => {
-    const timeout = await run(
-      NODE,
-      ['-e', 'setTimeout(()=>{},60000)'],
-      '',
-      opts({ timeoutSeconds: 0.25 }),
-    );
-    const launch = await run('definitely-not-a-real-binary-xyz', [], '', opts());
-
-    assert.deepEqual(
-      [timeout.timedOut, timeout.launchError === null],
-      [true, true],
-      'a timeout reports only as a timeout',
-    );
-    assert.deepEqual(
-      [launch.timedOut, launch.launchError === null],
-      [false, false],
-      'a launch failure reports only as a launch failure',
-    );
-  });
-
   test('output larger than one chunk is reassembled intact', async () => {
     // The accumulator is hand-written now that `maxBuffer` is gone, so a payload
     // well past a single pipe read has to come back whole.

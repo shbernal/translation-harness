@@ -77,7 +77,6 @@ function memoryStore(count: number): MemoryStore {
   const runs = new Map<string, RunStatus>();
   const perRow = new Map<number, number>();
   let nextAttemptId = 1;
-  let closed = false;
 
   const release = (row: MemoryRow, state: MemoryRow['state']): void => {
     row.claimedBy = null;
@@ -188,10 +187,7 @@ function memoryStore(count: number): MemoryStore {
       }
     },
 
-    async close() {
-      closed = true;
-      assert.ok(closed, 'close is idempotent, which is why calling it twice is fine');
-    },
+    async close() {},
   };
 }
 

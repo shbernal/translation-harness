@@ -49,10 +49,6 @@ describe('the derived run id', () => {
     assert.match(BASE, /^[0-9a-f]{32}$/);
   });
 
-  test('is the same for the same inputs, which is what makes init idempotent', () => {
-    assert.equal(idOf(REVIEW_TEST_JOB), BASE);
-  });
-
   test('does not depend on the order the caller iterated the corpus in', () => {
     const shuffled = [corpus()[2], corpus()[0], corpus()[3], corpus()[1]] as ReviewSourceRow[];
     assert.equal(idOf(REVIEW_TEST_JOB, shuffled), BASE);

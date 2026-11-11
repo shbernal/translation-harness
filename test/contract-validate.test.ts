@@ -203,12 +203,6 @@ describe('genericReviewReasons', () => {
     );
   });
 
-  test('a row whose fields are all blank is flagged, and says so in those terms', () => {
-    // `suspicious combined length ratio: 0.00` described the arithmetic and read
-    // as a warning about the translation; there is no translation to warn about.
-    assert.deepEqual(genericReviewReasons('', '', T), ['no translatable content']);
-  });
-
   test('an all-blank row is flagged whatever the field count, separators included', () => {
     // The flag used to be a side effect of the ratio, and the join separator
     // decided whether the side effect happened. One translatable field gives
@@ -216,6 +210,8 @@ describe('genericReviewReasons', () => {
     // more give a string of newlines against the same string of newlines, so the
     // ratio is exactly 1.00 and the row passes. Same row, same emptiness,
     // opposite verdict, and the only reason is how many newlines the join added.
+    // The reason is worded as what it is: `suspicious combined length ratio:
+    // 0.00` described the arithmetic, and there is no translation to warn about.
     for (const fieldCount of [1, 2, 3, 7]) {
       const concat = Array(fieldCount).fill('').join('\n');
       assert.deepEqual(

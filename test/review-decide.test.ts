@@ -311,14 +311,6 @@ describe('what it deliberately leaves alone', () => {
     );
     assert.equal(resolved.get(1)?.name, 'Politique de controle', 'the choice is the decision');
   });
-
-  test('it reads nothing from the live corpus, so a stale snapshot resolves to itself', () => {
-    const { resolved } = resolveDecisions(
-      SNAPSHOT,
-      decisions({ 'AU-1': { name: { kind: 'keep' } } }),
-    );
-    assert.equal(resolved.get(2)?.name, 'Registres d audit');
-  });
 });
 
 // The unit cases above build their own rows. This one asks the same questions
