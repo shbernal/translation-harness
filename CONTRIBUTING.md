@@ -75,3 +75,10 @@ which words mark which level is a judgement about one language pair.
   through `onEvent`; cancellation arrives as an `AbortSignal`.
 - When you learn something durable, write it into the `docs/` page that owns the
   subject. What you tried before it worked belongs in the commit message.
+
+## Commits and pull requests
+
+Commit messages carry no AI attribution: no `Co-authored-by:` trailer for a
+tool, no "Generated with" line. CI checks it against `.github/cchk.toml`. The
+disclosure goes in the pull request instead, on the `AI disclosure:` line the
+template asks for.
