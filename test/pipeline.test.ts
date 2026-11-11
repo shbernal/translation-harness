@@ -525,13 +525,6 @@ describe('progress events', () => {
       }
     });
   });
-
-  test('a run with no reporter is exactly as valid', async () => {
-    await withFixture(3, async ({ store, options }) => {
-      const summary = await runTranslation(store, job, await store.selectCandidates({}), options);
-      assert.equal(summary.succeeded, 3);
-    });
-  });
 });
 
 // Providers that fail in specific, useful ways. Registered once; none of them

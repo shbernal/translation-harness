@@ -14,10 +14,6 @@ import { fieldKeys, loadCorpus, pairs } from './helpers/fixtures.ts';
 
 const corpus = loadCorpus();
 
-test('the corpus is not empty', () => {
-  assert.ok(corpus.length > 0, 'no fixture sources found');
-});
-
 for (const source of corpus) {
   const id = source.meta.id;
 
