@@ -1,8 +1,8 @@
 # Test fixtures
 
 **This directory is immutable upstream material.** Do not edit it, do not
-reformat it, and do not let a lint autofix touch it. Biome excludes it via
-`files.includes`, `.gitattributes` marks it `-text` so Git will not rewrite a
+reformat it, and do not let a lint autofix touch it. oxlint and oxfmt exclude
+it via `ignorePatterns`, `.gitattributes` marks it `-text` so Git will not rewrite a
 line ending either, and `scripts/check-no-emdash.ts` skips it. All three are on
 purpose.
 

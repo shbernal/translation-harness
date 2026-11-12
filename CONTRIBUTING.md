@@ -1,7 +1,7 @@
 # Contributing
 
 Short version: `pnpm install`, then `pnpm check` before you finish. It runs the
-typecheck, Biome, the em-dash guard and the whole test suite.
+typecheck, oxlint (type-aware), the oxfmt check, the em-dash guard and the whole test suite.
 
 **Never write a test that makes a live model call.** `registerMockProvider()`
 runs the entire loop offline and deterministically, and the provider tests drive
@@ -39,8 +39,8 @@ Two things to know before you open the PR:
 - **You are vouching for the alignment.** Nobody else can check it, which is the
   entire premise. Say in the PR how you verified that row N on one side really
   is row N on the other.
-- **`test/fixtures/` is never reformatted or edited.** Biome and the em-dash
-  guard both exclude it. The bytes are the measurement; a whitespace tidy-up
+- **`test/fixtures/` is never reformatted or edited.** oxlint, oxfmt and the
+  em-dash guard all exclude it. The bytes are the measurement; a whitespace tidy-up
   changes what the calibration is measuring.
 
 The calibration test discovers its language pairs from the corpus, so adding a

@@ -1,6 +1,6 @@
 # Normalize all text files to LF in the repo and on checkout.
 # `eol=lf` overrides a machine's core.autocrlf=true (the Git-for-Windows
-# default), which otherwise re-CRLFs files and breaks `biome check`.
+# default), which otherwise re-CRLFs files and breaks `oxfmt --check`.
 * text=auto eol=lf
 
 # Binary assets: never touch line endings.

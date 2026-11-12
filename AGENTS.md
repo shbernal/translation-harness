@@ -74,7 +74,7 @@ else is in `docs/`.
 - **`test/fixtures/` is immutable upstream material.** Do not edit it, do not
   reformat it, do not let a lint autofix touch it. Each fixture is a third-party
   work redistributed under its own license, and its bytes are what the
-  guardrail calibration is measured against. Biome and the em-dash check both
+  guardrail calibration is measured against. oxlint, oxfmt and the em-dash check all
   exclude it on purpose.
 - **No em dashes (U+2014)** in source, docs or prompts. Use a hyphen or
   restructure. `scripts/check-no-emdash.ts` enforces it.

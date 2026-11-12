@@ -90,8 +90,10 @@ export interface BatchFailure {
  * thinks about a run as one set of decisions, `ProviderOptions.provider` already
  * holds the provider *name*, and `RunOptions` was published in this shape.
  */
-export interface AgentBatchOptions<TRow extends ClaimedRow, TOutcome extends string = string>
-  extends ProviderOptions {
+export interface AgentBatchOptions<
+  TRow extends ClaimedRow,
+  TOutcome extends string = string,
+> extends ProviderOptions {
   store: BatchStore<TRow>;
 
   /**

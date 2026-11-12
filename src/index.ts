@@ -79,11 +79,7 @@ export { type RunEvent, type RunOptions, type RunSummary, runTranslation } from 
 // Model profiles. Re-exported from the root although they live in the provider
 // layer, because binding a run to an exact model is a decision the caller makes
 // about the run, not about the subprocess.
-export {
-  DEFAULT_PROFILES,
-  type ModelProfile,
-  resolveProfile,
-} from './provider/profiles.ts';
+export { DEFAULT_PROFILES, type ModelProfile, resolveProfile } from './provider/profiles.ts';
 export type { ProviderName, ProviderOptions } from './provider/types.ts';
 export { resolveRunOutput } from './review/chain.ts';
 // The review contract: what a review job is, what the reviewer is asked, and
@@ -142,11 +138,7 @@ export {
   REVIEW_MOCK_PROVIDER_NAME,
   registerReviewMockProvider,
 } from './review/mock.ts';
-export {
-  buildReviewPrompt,
-  ROW_SNAPSHOT_MARKER,
-  type RowEvidence,
-} from './review/prompt.ts';
+export { buildReviewPrompt, ROW_SNAPSHOT_MARKER, type RowEvidence } from './review/prompt.ts';
 // Executing a review run: one pass over it, as a configuration of the same
 // batch runner the translation pass is.
 export {
