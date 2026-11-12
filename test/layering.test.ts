@@ -6,7 +6,7 @@
 // kept by review: the codebase this was extracted from broke exactly this rule
 // once, silently, with one attentive author reading it daily. So it is a test.
 //
-// Deliberately not Biome's `noRestrictedImports`: that rule matches specifier
+// Deliberately not a lint's `no-restricted-imports`: that rule matches specifier
 // *strings*, and a relative specifier varies with the importing file's depth
 // (`../contract/prompt.ts` versus `../../contract/prompt.ts`), so the pattern
 // set is fragile and incomplete in a way nothing reports. It also cannot
@@ -251,7 +251,7 @@ export function blankNonCode(source: string): string {
  * specifiers are not our business and are dropped.
  *
  * The two static forms are anchored to the start of a line. Every static import
- * and re-export in ESM is a statement, and this tree is Biome-formatted, so
+ * and re-export in ESM is a statement, and this tree is oxfmt-formatted, so
  * they always are; anchoring means a quoted specifier appearing mid-expression
  * cannot be mistaken for one. The dynamic form is matched anywhere, which is
  * safe because comments are already blanked.

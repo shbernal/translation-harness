@@ -26,7 +26,13 @@
     "node": ">=24",
     "pnpm": ">=11"
   },
-  "files": ["dist", "docs", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -47,15 +53,17 @@
     "prepare": "pnpm run build",
     "check": "pnpm run typecheck && pnpm run lint && pnpm test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "biome check src test scripts examples && pnpm run lint:text",
+    "lint": "oxlint --type-aware src test scripts examples && oxfmt --check src test scripts examples && pnpm run lint:text",
     "lint:text": "node scripts/check-no-emdash.ts",
-    "lint:fix": "biome check --write src test scripts examples",
-    "format": "biome format --write src test scripts examples",
+    "lint:fix": "oxlint --type-aware --fix src test scripts examples",
+    "format": "oxfmt src test scripts examples",
     "test": "node --test \"test/**/*.test.ts\""
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.6",
     "@types/node": "^24.19.2",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006",
     "typescript": "^7.0.2"
   }
 }
